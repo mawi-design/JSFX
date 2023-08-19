@@ -1,0 +1,1350 @@
+desc:mawi EQ-A4k
+/*
+version: 1.00
+changelog: First release :)
+tags: EQ, Filter
+author: mawi
+copyright (C) 2023 and later mawi
+license: GNU AGPLv3 - https://www.gnu.org/licenses/agpl-3.0.html
+provides: 
+  img/*
+  mawi_EQ-A4k_Manual.pdf
+about:
+  # EQ-A4k
+  ---
+  ## Fully parametric analog EQ
+
+  The EQ-A4k is based on a very well-known British analog EQ that has been used for countless productions. Some functions and extensions have been added to the EQ-A4k to make it even more universally applicable. 
+
+  The highlight at a glance:
+  * analog hardware as model
+  * digital filters without distortion (decramped filters)
+  * 4 EQ bands, 3 HP and 3 LP filters
+  * low CPU, 0 latency, optimal for recording
+  * no noise or harmonic distortion, ideal for mixing and mastering
+  * attractive GUI, freely scalable
+  * fully automatable with sample accurate automation
+  * automatic bypass when playback stops 
+  * open source code, i.e. modifiable
+  * freeware, no annoying activation
+  * JSFX is optimally integrated in REAPER
+
+  If you want to **support** my work or buy me a coffee, you can send my a donation via Paypal: mawi01@mail.de
+*/
+
+in_pin:EQ-A4k Input 1
+in_pin:EQ-A4k Input 2
+out_pin:EQ-A4k Output 1
+out_pin:EQ-A4k Output 2
+
+slider1:slider_eq_in=1<0,1,1{Out,In}>-EQ In/Out
+// slider2:
+slider3:slider_low_cut_slope=0<0,3,1{Off,6dB/oct,12dB/oct,18dB/oct}>-HPF Slope
+slider4:slider_low_cut_frequency=16<16,4000,0.01,:log=100>-HPF Freq (Hz)
+// slider5:
+slider6:slider_low_type=0<0,1,1{Shelf,Bell}>-LF Type
+slider7:slider_low_gain=0<-18,18,0.01>-LF Gain (dB)
+slider8:slider_low_frequency=100<30,500,0.01,:log=100>-LF Freq (Hz)
+slider9:slider_low_q=1<3.5,0.35,0.01,:log=1>-LF Q
+// slider10:
+slider11:slider_low_mid_gain=0<-18,18,0.01>-LMF Gain (dB)
+slider12:slider_low_mid_frequency=400<100,2500,0.01,:log=400>-LMF Freq (Hz)
+slider13:slider_low_mid_q=1<3.5,0.35,0.01,:log=1>-LMF Q
+// slider14:
+slider15:slider_trim=0<-18,18,0.01>-Trim (dB)
+// slider16:
+slider17:slider_high_mid_gain=0<-18,18,0.01>-HMF Gain (dB)
+slider18:slider_high_mid_frequency=4000<400,10000,0.01,:log=4000>-HMF Freq (Hz)
+slider19:slider_high_mid_q=1<3.5,0.35,0.01,:log=1>-HMF Q
+// slider20:
+slider21:slider_high_type=0<0,1,1{Shelf,Bell}>-HF Type
+slider22:slider_high_gain=0<-18,18,0.01>-HF Gain (dB)
+slider23:slider_high_frequency=8000<1500,16000,0.01,:log=8000>-HF Freq (Hz)
+slider24:slider_high_q=1<3.5,0.35,0.01,:log=1>-HF Q
+// slider25:
+slider26:slider_high_cut_slope=0<0,3,1{Off,6dB/oct,12dB/oct,18dB/oct}>-LPF Slope
+slider27:slider_high_cut_frequency=16000<300,16000,0.01,:log=3000>-LPF Freq (Hz)
+// slider28:
+slider29:slider_phase_inv=0<0,1,1{Normal,Inverted}>-Phase
+
+options:no_meter
+
+@serialize
+file_var(0,_global.mawi_eq_a4k_show_tooltip);
+file_var(0,sample_accurate_automation);
+file_var(0,_global.mawi_eq_a4k_auto_bypass_on_stop);
+
+@init
+gfx_loadimg(0, "./img/background.png");
+gfx_loadimg(1, "./img/poti_low_gain.png");
+gfx_loadimg(2, "./img/poti_low_freq.png");
+gfx_loadimg(3, "./img/poti_low_q.png");
+gfx_loadimg(4, "./img/button_low_type.png");
+gfx_loadimg(5, "./img/poti_hpf.png");
+gfx_loadimg(6, "./img/poti_low_mid_gain.png");
+gfx_loadimg(7, "./img/poti_low_mid_freq.png");
+gfx_loadimg(8, "./img/poti_low_mid_q.png");
+gfx_loadimg(9, "./img/poti_trim.png");
+gfx_loadimg(10, "./img/poti_high_mid_gain.png");
+gfx_loadimg(11, "./img/poti_high_mid_freq.png");
+gfx_loadimg(12, "./img/poti_high_mid_q.png");
+gfx_loadimg(13, "./img/poti_high_gain.png");
+gfx_loadimg(14, "./img/poti_high_freq.png");
+gfx_loadimg(15, "./img/poti_high_q.png");
+gfx_loadimg(16, "./img/poti_lpf.png");
+gfx_loadimg(17, "./img/button_high_type.png");
+gfx_loadimg(18, "./img/button_bypass.png");
+gfx_loadimg(19, "./img/button_hpf12.png");
+gfx_loadimg(20, "./img/button_hpf24.png");
+gfx_loadimg(21, "./img/button_hpf48.png");
+gfx_loadimg(22, "./img/button_lpf12.png");
+gfx_loadimg(23, "./img/button_lpf24.png");
+gfx_loadimg(24, "./img/button_lpf48.png");
+gfx_loadimg(25, "./img/button_phase.png");
+gfx_loadimg(26, "./img/menu.png");
+
+degrees = $pi/180;
+
+function background_color_(red, green, blue)
+instance()
+local()
+global(gfx_clear)
+(
+  gfx_clear = red + green*256 + blue*65536;
+);
+
+function background_img_(img_file_id, rotation)
+instance(img_size_w, img_size_h)
+local()
+global(gfx_x, gfx_y, gfx_w, gui_scale_factor, degrees)
+(
+  gfx_getimgdim(img_file_id, img_size_w, img_size_h);
+  gui_scale_factor = gfx_w / img_size_w;
+  
+  gfx_x = gfx_y = 0;
+  gfx_blit(img_file_id, gui_scale_factor, rotation * degrees);
+);
+
+function resize_icon_(icon_size)
+instance()
+local()
+global(gfx_ext_flags, gfx_w, gfx_h, gui_scale_factor)
+(
+  gfx_ext_flags == 0 ? (
+    gfx_set(1, 1, 1, 0.3);
+    //icon_size *= gui_scale_factor;
+    gfx_triangle(gfx_w, gfx_h, gfx_w, gfx_h - icon_size, gfx_w - icon_size, gfx_h);
+  );
+);
+
+function cosh_(x) 
+instance()
+local()
+global()
+(
+  (exp(x) + exp(-x)) / 2;
+);
+
+function high_cut_coefficients_(slider_frequency, slider_q)
+instance(omega, omega_0, q, phi_0, phi_1, phi_2, a1, a2, A_0, A_1, A_2, R_1, R_2, B_0, B_1, B_2, b0, b1, b2) 
+local()
+global(srate)
+(
+  omega = 2 * $pi * slider_frequency / srate;
+  omega_0 = omega;
+  q = 1/(2 * slider_q);
+  
+  phi_0 = 1-sin(omega/2)^2;
+  phi_1 = sin(omega/2)^2;
+  phi_2 = 4 * phi_0 * phi_1;
+  
+  a1 = q <= 1 ?
+       -2 * exp(-q*omega_0) * cos(sqrt(1 - sqr(q)) * omega_0) :
+       -2 * exp(-q*omega_0) * cosh_(sqrt(sqr(q) - 1) * omega_0);
+  a2 = exp(-2*q*omega_0);
+  
+  A_0 = sqr(1 + a1 + a2);
+  A_1 = sqr(1 - a1 + a2);
+  A_2 = -4 * a2;
+  
+  R_1 = ( A_0 * phi_0 + A_1 * phi_1 + A_2 * phi_2) * sqr(slider_q);
+  R_2 = (-A_0 + A_1 + 4 * (phi_0 - phi_1) * A_2) * sqr(slider_q);
+  
+  B_0 = A_0;
+  B_1 = (R_1 - B_0 * phi_0) / phi_1;
+  B_2 = (R_1 - R_2 * phi_1 - B_0) / (4 * sqr(phi_1));
+  
+  b0 = 0.5 * (sqrt(B_0)+ sqrt(B_1));
+  b1 = sqrt(B_0) - b0;
+  b2 = 0;
+);
+
+function low_cut_coefficients_(slider_frequency, slider_q)
+instance(omega, omega_0, q, phi_0, phi_1, phi_2, a1, a2, A_0, A_1, A_2, b0, b1, b2) 
+local()
+global(srate)
+(
+  omega = 2 * $pi * slider_frequency / srate;
+  omega_0 = omega;
+  q = 1/(2 * slider_q);
+  
+  phi_0 = 1-sin(omega/2)^2;
+  phi_1 = sin(omega/2)^2;
+  phi_2 = 4 * phi_0 * phi_1;
+  
+  a1 = q <= 1 ?
+       -2 * exp(-q*omega_0) * cos(sqrt(1 - sqr(q)) * omega_0) :
+       -2 * exp(-q*omega_0) * cosh_(sqrt(sqr(q) - 1) * omega_0);
+  a2 = exp(-2*q*omega_0);
+  
+  A_0 = sqr(1 + a1 + a2);
+  A_1 = sqr(1 - a1 + a2);
+  A_2 = -4 * a2;
+  
+  b0 = (sqrt(A_0 * phi_0 + A_1 * phi_1 + A_2 * phi_2)) / (4 * phi_1) * slider_q;
+  b1 = -2 * b0;
+  b2 = b0;
+);
+
+function high_shelf_coefficients_(slider_frequency, slider_gain)
+instance(f_c, G, f_m, phi_m, alpha, beta, a1, b, b0, b1) 
+local()
+global(srate)
+(
+  f_c = 2 * slider_frequency / srate;
+  G = 10^(slider_gain/20);
+  f_m = 0.9;
+  
+  phi_m = 1-cos($pi * f_m);
+  
+  alpha = 2 / sqr($pi) * ((1 / sqr(f_m)) + (1 / (G * sqr(f_c)))) - (1 / phi_m);
+  beta = 2 / sqr($pi) * ((1 / sqr(f_m)) + (G / sqr(f_c))) - (1 / phi_m);
+  
+  a1 = -alpha / (1 + alpha + sqrt(1 + 2 * alpha));
+  b = -beta / (1 + beta + sqrt(1 + 2 * beta));
+  
+  b0 = (1 + a1) / (1 + b);
+  b1 = b * b0;
+);
+
+function low_shelf_coefficients_(slider_frequency, slider_gain)
+instance(f_c, G, f_m, phi_m, alpha, beta, a1, b, b0, b1) 
+local()
+global(srate)
+(
+  f_c = 2 * slider_frequency / srate;
+  G = 1 / 10^(slider_gain/20);
+  f_m = 0.9;
+  
+  phi_m = 1-cos($pi * f_m);
+  
+  alpha = 2 / sqr($pi) * ((1 / sqr(f_m)) + (1 / (G * sqr(f_c)))) - (1 / phi_m);
+  beta = 2 / sqr($pi) * ((1 / sqr(f_m)) + (G / sqr(f_c))) - (1 / phi_m);
+  
+  a1 = -alpha / (1 + alpha + sqrt(1 + 2 * alpha));
+  b = -beta / (1 + beta + sqrt(1 + 2 * beta));
+  
+  b0 = (1 + a1) / (1 + b) / G;
+  b1 = b * b0;
+);
+
+function peak_coefficients_(slider_frequency, slider_gain, slider_q)
+instance(G, omega, omega_0, q, phi_0, phi_1, phi_2, a1, a2, A_0, A_1, A_2, R_1, R_2, B_0, B_2, B_1, W, b0, b1, b2)
+local()
+global(srate)
+(
+  G = 10^(slider_gain/20);
+  omega = 2 * $pi * slider_frequency / srate;
+  omega_0 = omega;
+  q = 1/(sqrt(G) * slider_q);
+  
+  phi_0 = 1-sin(omega/2)^2;
+  phi_1 = sin(omega/2)^2;
+  phi_2 = 4 * phi_0 * phi_1;
+  
+  a1 = q <= 1 ?
+       -2 * exp(-q*omega_0) * cos(sqrt(1 - sqr(q)) * omega_0) :
+       -2 * exp(-q*omega_0) * cosh_(sqrt(sqr(q) - 1) * omega_0);
+  a2 = exp(-2*q*omega_0);
+  
+  A_0 = sqr(1 + a1 + a2);
+  A_1 = sqr(1 - a1 + a2);
+  A_2 = -4 * a2;
+  
+  R_1 = ( A_0 * phi_0 + A_1 * phi_1 + A_2 * phi_2) * sqr(G);
+  R_2 = (-A_0 + A_1 + 4 * (phi_0 - phi_1) * A_2) * sqr(G);
+  
+  B_0 = A_0;
+  B_2 = (R_1 - R_2 * phi_1 - B_0) / (4 * sqr(phi_1));
+  B_1 = R_2 + B_0 + 4 * (phi_1 - phi_0) * B_2;
+  
+  W = 0.5 * (sqrt(B_0) + sqrt(B_1));
+  
+  b0 = 0.5 * (W + sqrt(sqr(W) + B_2));
+  b1 = 0.5 * (sqrt(B_0) - sqrt(B_1));
+  b2 = -B_2 / (4 * b0);
+);
+
+function second_order_filter_sample_processing_(input)
+instance(a1, a2, b0, b1, b2, v_0, v_1, v_2, w_0, w_1, w_2, output)
+local()
+global()
+(
+  v_0 = input;
+  w_0 = - this..a1*w_1 - this..a2*w_2 + this..b0*v_0 + this..b1*v_1 + this..b2*v_2;
+  output = w_0;
+  v_2 = v_1;
+  w_2 = w_1;
+  v_1 = v_0;
+  w_1 = w_0;
+);
+
+function first_order_hpf_coefficients_(slider_frequency)
+instance(a0, a1, b1)
+local()
+global(srate)
+(
+  b1 = exp(-2 * $pi * slider_frequency / srate);
+  a0 = (1 + b1) / 2;
+  a1 = -a0;
+);
+
+function first_order_hpf_sample_processing_(input)
+instance(a0, a1, b1, x_1, output)
+local()
+global()
+(
+  output = input*this..a0 + x_1*this..a1 + output*this..b1;
+  x_1 = input;
+  output;
+);
+
+function first_order_lpf_coefficients_(slider_frequency)
+instance(a)
+local(omega_0, cos_omega_0)
+global(srate)
+(
+  omega_0 = 2 * $pi * slider_frequency / srate;
+  cos_omega_0 = cos(omega_0) - 2;
+  a = sqrt(sqr(cos_omega_0) - 1) + cos_omega_0 + 1;
+);
+
+function first_order_lpf_sample_processing_(input)
+instance(a, output)
+local()
+global()
+(
+  output += this..a * (input - output);
+);
+
+function dB_conversion_(value)
+instance(dB)
+local()
+global()
+(
+ dB = 10^(value/20);
+);
+
+function tooltip_(pos_x, pos_y, alignment, text)
+instance(
+mouse_over, mouse_drag, mouse_scroll, 
+mouse_click_left_count, 
+tooltip_time_hover, tooltip_timer, 
+tooltip_time_delta, tooltip, 
+tooltip_fade_alpha, slider_value)
+local(
+tooltip_pos_x, tooltip_pos_y, tooltip_alignment, 
+tooltip_text, textbox_size_w, textbox_size_h, 
+value_size_w, value_size_h, 
+padding_size_w, padding_size_h,
+border_size_w, border_size_h)
+global(
+gfx_x, gfx_y, gfx_r, gfx_g, gfx_b, gfx_a, 
+gui_scale_factor, #tooltip, time_current)
+(
+  tooltip_pos_x = pos_x;
+  tooltip_pos_y = pos_y;
+  tooltip_alignment = alignment;
+  tooltip_text = text;
+  
+  // tooltip
+  mouse_over || mouse_drag || mouse_scroll ? (
+    tooltip_timer += tooltip_time_delta;
+    tooltip_timer >= 0.5 || mouse_drag || mouse_click_left_count ? (
+      tooltip = 1;
+      gfx_setfont(1, "Verdana", 30 * gui_scale_factor);
+      slider_value < 1000 ? (
+        sprintf(#tooltip, tooltip_text, slider_value);
+      ):(
+        sprintf(#tooltip, tooltip_text, slider_value/1000);
+      );
+      gfx_measurestr(#tooltip, value_size_w *= gui_scale_factor, value_size_h *= gui_scale_factor);
+      // textbox
+      tooltip_pos_x *= gui_scale_factor;
+      tooltip_pos_y *= gui_scale_factor;
+      padding_size_w = 20 * gui_scale_factor;
+      padding_size_h = 10 * gui_scale_factor;
+      border_size_w = 4 * gui_scale_factor;
+      border_size_h = 4 * gui_scale_factor;
+      textbox_size_w = value_size_w + padding_size_w;
+      textbox_size_h = value_size_h + padding_size_h;
+      // left-aligned
+      tooltip_alignment == 0 ? (
+        // border
+        gfx_x = tooltip_pos_x - border_size_w;
+        gfx_y = tooltip_pos_y - border_size_h - textbox_size_h/2;
+        gfx_set(0, 0, 0, tooltip_fade_alpha - 0.6);
+        gfx_rect(gfx_x, gfx_y, textbox_size_w + 2*border_size_w, textbox_size_h + 2*border_size_h);
+        // box
+        gfx_x = tooltip_pos_x;
+        gfx_y = tooltip_pos_y - textbox_size_h/2;
+        gfx_set(0.9, 0.9, 0.9, tooltip_fade_alpha);
+        gfx_rect(gfx_x, gfx_y, textbox_size_w, textbox_size_h);
+        // text
+        gfx_x = tooltip_pos_x + padding_size_w/2;
+        gfx_y = tooltip_pos_y;
+        gfx_set(0.1, 0.1, 0.1, tooltip_fade_alpha);
+        gfx_drawstr(#tooltip, 0+4+256, gfx_x, gfx_y);
+      );
+      // centered
+      tooltip_alignment == 1 ? (
+        // border
+        gfx_x = tooltip_pos_x - border_size_w - textbox_size_w/2;
+        gfx_y = tooltip_pos_y - border_size_h - textbox_size_h/2;
+        gfx_set(0, 0, 0, tooltip_fade_alpha - 0.6);
+        gfx_rect(gfx_x, gfx_y, textbox_size_w + 2*border_size_w, textbox_size_h + 2*border_size_h);
+        // box
+        gfx_x = tooltip_pos_x - textbox_size_w/2;
+        gfx_y = tooltip_pos_y - textbox_size_h/2;
+        gfx_set(0.9, 0.9, 0.9, tooltip_fade_alpha);
+        gfx_rect(gfx_x, gfx_y, textbox_size_w, textbox_size_h);
+        // text
+        gfx_x = tooltip_pos_x;
+        gfx_y = tooltip_pos_y;
+        gfx_set(0.1, 0.1, 0.1, tooltip_fade_alpha);
+        gfx_drawstr(#tooltip, 1+4+256, gfx_x, gfx_y);
+      );
+      // right-aligned
+      tooltip_alignment == 2 ? (
+        // border
+        gfx_x = tooltip_pos_x - border_size_w - textbox_size_w;
+        gfx_y = tooltip_pos_y - border_size_h - textbox_size_h/2;
+        gfx_set(0, 0, 0, tooltip_fade_alpha - 0.6);
+        gfx_rect(gfx_x, gfx_y, textbox_size_w + 2*border_size_w, textbox_size_h + 2*border_size_h);
+        // box
+        gfx_x = tooltip_pos_x - textbox_size_w;
+        gfx_y = tooltip_pos_y - textbox_size_h/2;
+        gfx_set(0.9, 0.9, 0.9, tooltip_fade_alpha);
+        gfx_rect(gfx_x, gfx_y, textbox_size_w, textbox_size_h);
+        // text
+        gfx_x = tooltip_pos_x - padding_size_w/2;
+        gfx_y = tooltip_pos_y;
+        gfx_set(0.1, 0.1, 0.1, tooltip_fade_alpha);
+        gfx_drawstr(#tooltip, 2+4+256, gfx_x, gfx_y);
+      );
+    );
+  );
+  
+  time_current = time_precise();
+  tooltip_time_delta = time_current - tooltip_time_hover;
+  tooltip_time_hover = time_current;
+  
+  !mouse_over && !mouse_drag ? tooltip_timer = tooltip = 0;
+  
+  tooltip > 0 ? (
+    tooltip_fade_alpha < 1 ? tooltip_fade_alpha += 0.2;
+    tooltip_fade_alpha = min(tooltip_fade_alpha, 1);
+  ):(
+    tooltip_fade_alpha > 0 ? (
+      tooltip_fade_alpha -= 0.2;
+    ):(
+      tooltip_fade_alpha = tooltip = 0;
+    );
+  );
+
+);
+
+function update_sliders_() (
+  // LPF ////////////////////////////////////////////////////////////////
+  slider_high_cut_slope == 1 ? (
+    high_cut_1.first_order_lpf_coefficients_(slider_high_cut_frequency);
+  );
+  
+  slider_high_cut_slope == 2 ? (
+    high_cut_2.high_cut_coefficients_(slider_high_cut_frequency, 0.70710678);
+  );
+  
+  slider_high_cut_slope == 3 ? (
+    high_cut_1.first_order_lpf_coefficients_(slider_high_cut_frequency);
+    high_cut_2.high_cut_coefficients_(slider_high_cut_frequency, 1);
+  );
+  
+  // HPF ///////////////////////////////////////////////////////////////////
+  slider_low_cut_slope == 1 ? (
+    low_cut_1.first_order_hpf_coefficients_(slider_low_cut_frequency);
+  );
+  
+  slider_low_cut_slope == 2 ? (
+    low_cut_2.low_cut_coefficients_(slider_low_cut_frequency, 0.70710678);
+  );
+  
+  slider_low_cut_slope == 3 ? (
+    low_cut_1.first_order_hpf_coefficients_(slider_low_cut_frequency);
+    low_cut_2.low_cut_coefficients_(slider_low_cut_frequency, 1);
+  );
+  
+  // EQ //////////////////////////////////////////////////////////////
+  slider_high_type == 0 ? 
+    high_shelf.high_shelf_coefficients_(slider_high_frequency/4, slider_high_gain):
+    peak_1.peak_coefficients_(slider_high_frequency, slider_high_gain, slider_high_q);
+  
+  peak_2.peak_coefficients_(slider_high_mid_frequency, slider_high_mid_gain, slider_high_mid_q);
+  
+  peak_3.peak_coefficients_(slider_low_mid_frequency, slider_low_mid_gain, slider_low_mid_q);
+  
+  slider_low_type == 0 ? 
+    low_shelf.low_shelf_coefficients_(slider_low_frequency*4, slider_low_gain):
+    peak_4.peak_coefficients_(slider_low_frequency, slider_low_gain, slider_low_q);
+  // output ///////////////////////////////////////////////////////////
+  trim.dB_conversion_(slider_trim);
+);
+
+function slider_parameter_(index, value, default, minimum, maximum, step)
+instance(slider_index, slider_value, slider_default, slider_type, slider_step,
+slider_minimum, slider_maximum)
+local()
+global()
+(
+  slider_index = index;
+  slider_value = value;
+  slider_default = default;
+  slider_minimum = minimum;
+  slider_maximum = maximum;
+  slider_step = step;
+  slider_type = "lin";
+);
+
+function slider_parameter_log_scaled_(index, value, default, minimum, maximum, step, midpoint)
+instance(slider_index, slider_value, slider_default, slider_type, slider_step,
+slider_minimum, slider_maximum, slider_midpoint)
+local()
+global()
+(
+  slider_index = index;
+  slider_value = value;
+  slider_default = default;
+  slider_minimum = minimum;
+  slider_maximum = maximum;
+  slider_step = step;
+  slider_midpoint = midpoint;
+  slider_type = "log";
+);
+
+function slider_parameter_log_scaled_inverse_(index, value, default, minimum, maximum, step, midpoint)
+instance(slider_index, slider_value, slider_default, slider_type, slider_step,
+slider_minimum, slider_maximum, slider_midpoint)
+local()
+global()
+(
+  slider_index = index;
+  slider_value = value;
+  slider_default = default;
+  slider_minimum = minimum;
+  slider_maximum = maximum;
+  slider_step = step;
+  slider_midpoint = midpoint;
+  slider_type = "log inv";
+);
+
+function slider_lin_scaled_to_normalized_()
+instance(slider_value, slider_minimum, slider_maximum, slider_normalized)
+local()
+global()
+(
+  slider_value = min(max(slider_value,slider_minimum),slider_maximum);
+  slider_normalized = (slider_value - slider_minimum) / (slider_maximum - slider_minimum);
+  slider_normalized = min(max(slider_normalized,0),1);
+);
+
+function slider_log_scaled_to_normalized_()
+instance(slider_value, slider_minimum, slider_midpoint, slider_maximum, slider_normalized)
+local(m, base)
+global()
+(
+  slider_value = min(max(slider_value, slider_minimum), slider_maximum);
+  m = (slider_midpoint - slider_minimum)/(slider_maximum - slider_minimum);
+  base = ((m-1)/m)^2;
+  slider_normalized = log((slider_value - slider_minimum)*(base-1)/(slider_maximum - slider_minimum)+1)/log(base);
+  slider_normalized = min(max(slider_normalized,0),1);
+);
+
+function slider_log_scaled_to_normalized_inverse_()
+instance(slider_value, slider_minimum, slider_midpoint, slider_maximum, slider_normalized)
+local(m, base)
+global()
+(
+  slider_value = min(max(slider_value, slider_minimum), slider_maximum);
+  m = (slider_midpoint - slider_maximum)/(slider_minimum - slider_maximum);
+  base = ((m-1)/m)^2;
+  slider_normalized = log((slider_value - slider_maximum)*(base-1)/(slider_minimum - slider_maximum)+1)/log(base);
+  slider_normalized = min(max(slider_normalized,0),1);
+);
+
+function slider_normalized_to_lin_scaled_()
+instance(slider_normalized, slider_value, slider_minimum, slider_maximum, slider_power)
+local()
+global()
+(
+  slider_normalized = min(max(slider_normalized,0),1);
+  slider_value = slider_normalized * (slider_maximum - slider_minimum) + slider_minimum;
+  slider_value = min(max(slider_value, slider_minimum), slider_maximum);
+);
+
+function slider_normalized_to_log_scaled_()
+instance(slider_normalized, slider_value, slider_minimum, slider_midpoint, slider_maximum)
+local(m, base)
+global()
+(
+  slider_normalized = min(max(slider_normalized,0),1);
+  m = (slider_midpoint - slider_minimum)/(slider_maximum - slider_minimum);
+  base = ((m-1)/m)^2;
+  slider_value = (slider_maximum - slider_minimum)*((base^slider_normalized-1)/(base-1))+ slider_minimum;
+  slider_value = min(max(slider_value, slider_minimum), slider_maximum);
+);
+
+function slider_normalized_to_log_scaled_inverse_()
+instance(slider_normalized, slider_value, slider_minimum, slider_midpoint, slider_maximum)
+local(m, base)
+global()
+(
+  slider_normalized = min(max(slider_normalized,0),1);
+  m = (slider_midpoint - slider_maximum)/(slider_minimum - slider_maximum);
+  base = ((m-1)/m)^2;
+  slider_value = (slider_minimum - slider_maximum)*((base^slider_normalized-1)/(base-1))+ slider_maximum;
+  slider_value = min(max(slider_value, slider_minimum), slider_maximum);
+);
+
+function stepped_value_()
+instance(slider_value, slider_step)
+local()
+global()
+(
+  slider_step === 0 ? slider_value : floor(slider_value/slider_step + 0.000001) * slider_step;
+);
+
+function img_frame_(file_id, scaling, rotation, pos_x, pos_y, frames)
+instance(slider_value, slider_minimum, slider_maximum, img_scaling,
+img_rotation, img_pos_x, img_pos_y, img_size_w, img_size_h, slider_normalized)
+local(img_file_id, img_frames, img_frame, img_frame_pos_x, img_frame_pos_y)
+global(gfx_x, gfx_y, gfx_a, gui_scale_factor, degrees)
+(
+  // image parameter
+  img_file_id = file_id;
+  img_scaling = scaling;
+  img_rotation = rotation;
+  img_pos_x = pos_x;
+  img_pos_y = pos_y;
+  img_frames = frames;
+  gfx_getimgdim(img_file_id, img_size_w, img_size_h);
+  img_size_h /= img_frames;
+  
+  // calculate image frame
+  img_frame = floor((img_frames - 1) * slider_normalized);
+  img_frame_pos_x = 0;
+  img_frame_pos_y = img_size_h * img_frame;
+  
+  // draw image frame
+  gfx_x = img_pos_x * gui_scale_factor;
+  gfx_y = img_pos_y * gui_scale_factor;
+  //gfx_a = 0.5;
+  gfx_blit(img_file_id, img_scaling * gui_scale_factor, img_rotation * 
+  degrees, img_frame_pos_x, img_frame_pos_y, img_size_w, img_size_h);
+);
+
+function img_frame_option_(file_id, scaling, rotation, pos_x, pos_y, frames)
+instance(slider_value, slider_minimum, slider_maximum, img_scaling,
+img_rotation, img_pos_x, img_pos_y, img_size_w, img_size_h, option_value)
+local(img_file_id, img_frames, img_frame, img_frame_pos_x, img_frame_pos_y)
+global(gfx_x, gfx_y, gfx_a, gui_scale_factor, degrees)
+(
+  // image parameter
+  img_file_id = file_id;
+  img_scaling = scaling;
+  img_rotation = rotation;
+  img_pos_x = pos_x;
+  img_pos_y = pos_y;
+  img_frames = frames;
+  gfx_getimgdim(img_file_id, img_size_w, img_size_h);
+  img_size_h /= img_frames;
+  
+  // calculate image frame
+  this..slider_value == option_value ? img_frame = 1 : img_frame = 0;
+  img_frame_pos_x = 0;
+  img_frame_pos_y = img_size_h * img_frame;
+  
+  // draw image frame
+  gfx_x = img_pos_x * gui_scale_factor;
+  gfx_y = img_pos_y * gui_scale_factor;
+  //gfx_a = 0.5;
+  gfx_blit(img_file_id, img_scaling * gui_scale_factor, img_rotation * 
+  degrees, img_frame_pos_x, img_frame_pos_y, img_size_w, img_size_h);
+);
+
+function mouse_button_switch_()
+instance(slider_index, slider_value, slider_default, slider_normalized,
+slider_minimum, slider_maximum,
+mouse_over, mouse_drag, mouse_click_left, slider_value_previous)
+local()
+global(current_cursor, slider_change)
+(
+  // mouse parameter
+  mouse_over || mouse_drag ? current_cursor = 32649;
+  
+  // process
+  mouse_click_left ? slider_value = !slider_value;
+  slider_normalized = slider_value;
+  
+  // update slider
+  slider_value_previous !== slider_value ? (
+    slider_change = 1;
+    slider_value_previous = slider_value;
+    slider_automate(slider(slider_index));
+  );
+  
+  slider_value;
+);
+
+function mouse_knob_()
+instance(slider_index, slider_value, slider_default,
+slider_minimum, slider_maximum,
+slider_value_previous, slider_normalized, slider_type,
+mouse_over, mouse_drag, mouse_scroll, mouse_click_left,
+mouse_y_previous, mouse_wheel_previous, knob_resolution)
+local()
+global(mouse_cap, mouse_wheel, mouse_y, slider_change, current_cursor)
+(
+  // mouse parameter
+  knob_resolution = 1/250;
+  mouse_cap&4 ? knob_resolution *= 0.1;
+  mouse_click_left >= 2 ? slider_value = slider_default;
+  mouse_over || mouse_drag ? current_cursor = 32645;
+  
+  slider_type == "lin" ? this.slider_lin_scaled_to_normalized_();
+  slider_type == "log" ? this.slider_log_scaled_to_normalized_();
+  slider_type == "log inv" ? this.slider_log_scaled_to_normalized_inverse_();
+  
+  // process
+  mouse_drag ? slider_normalized += (mouse_y_previous - mouse_y) * knob_resolution;
+  mouse_scroll ? slider_normalized -= (mouse_wheel_previous - mouse_wheel) / 1.2 * 0.1 * knob_resolution;
+  
+  mouse_y_previous = mouse_y;
+  mouse_wheel_previous = mouse_wheel;
+  
+  slider_type == "lin" ? this.slider_normalized_to_lin_scaled_();
+  slider_type == "log" ? this.slider_normalized_to_log_scaled_();
+  slider_type == "log inv" ? this.slider_normalized_to_log_scaled_inverse_();
+  
+  // update slider
+  slider_value_previous !== slider_value ? (
+    slider_change = 1;
+    slider_value_previous = slider_value;
+    slider_automate(slider(slider_index));
+  );
+  
+  slider_value;
+);
+
+function mouse_logic_()
+instance(img_scaling, img_pos_x, img_pos_y, img_size_w, img_size_h,
+mouse_over, mouse_drag, mouse_scroll, mouse_click_left, mouse_click_right,
+mouse_click_left_count, mouse_click_right_count,  
+mouse_click_left_time, mouse_click_right_time,
+mouse_doubleclicktime, mouse_click_delta,
+mouse_y_previous, mouse_wheel_previous, mouse_cap_previous)
+local()
+global(mouse_cap, mouse_x, mouse_y, mouse_wheel, gui_scale_factor)
+(
+  // mouse logic
+  mouse_doubleclicktime = 0.25;
+  // left mouse button
+  mouse_click_left = (mouse_cap&1 && !(mouse_cap_previous&1)) ? (
+    mouse_click_delta = time_precise() - mouse_click_left_time;
+    mouse_click_left = 1;
+    mouse_click_left_time = time_precise() - 0.001;
+    mouse_click_delta < mouse_doubleclicktime ? (
+      mouse_click_left_count += 1;
+    ):(
+      mouse_click_left_count = 1;
+    );
+  );
+  
+  // right mouse button
+  mouse_click_right = (mouse_cap&2 && !(mouse_cap_previous&2)) ? (
+    mouse_click_delta = time_precise() - mouse_click_right_time;
+    mouse_click_right = 1;
+    mouse_click_right_time = time_precise() - 0.001;
+    mouse_click_delta < mouse_doubleclicktime ? (
+      mouse_click_right_count += 1;
+    ):(
+      mouse_click_right_count = 1;
+    );
+  );
+  mouse_cap_previous = mouse_cap;
+  
+  // collision / mouse over
+  mouse_x >= img_pos_x * gui_scale_factor &&
+  mouse_x <= img_pos_x * gui_scale_factor + 
+             img_size_w * img_scaling * gui_scale_factor &&
+  mouse_y >= img_pos_y * gui_scale_factor &&
+  mouse_y <= img_pos_y * gui_scale_factor +
+             img_size_h * img_scaling * gui_scale_factor ? (
+    !mouse_cap ? mouse_over = 1;
+     mouse_cap ? mouse_click_left_count >= 1;
+     mouse_over && mouse_click_left && mouse_click_left_count ? mouse_drag = 1;
+     mouse_wheel ? mouse_scroll = 1;
+   ):(
+     mouse_over = mouse_click_left_count = mouse_click_left = mouse_scroll = 0;
+   );
+  
+  !mouse_cap ? mouse_drag = 0;
+  !mouse_wheel ? mouse_scroll = 0;
+);
+
+function mouse_button_option_(value)
+instance(slider_index, slider_value, slider_value_previous,
+mouse_over, mouse_drag, mouse_click_left, option_value)
+local()
+global(mouse_cap, mouse_wheel, mouse_y, slider_change, current_cursor)
+(
+  option_value = value;
+  
+  // mouse parameter
+  mouse_over || mouse_drag ? current_cursor = 32649;
+  
+  // process
+  mouse_click_left ? this..slider_value == option_value ? this..slider_value = 0 : this..slider_value = option_value;
+  
+  // update slider
+  slider_value_previous !== this..slider_value ? (
+    slider_change = 1;
+    slider_value_previous = this..slider_value;
+    slider_automate(slider(this..slider_index));
+  );
+  
+  this..slider_value;
+);
+
+function menu_()
+instance(mouse_over, mouse_drag, mouse_click_left, mouse_cap_previous, mouse_click_right, menu, #menustr)
+local()
+global(gfx_x, gfx_y,  mouse_x, mouse_y, current_cursor, _global.mawi_eq_a4k_show_tooltip, sample_accurate_automation,
+_global.mawi_eq_a4k_auto_bypass_on_stop)
+(
+  // mouse parameter
+  mouse_over || mouse_drag ? current_cursor = 32649;
+  
+  // process
+  mouse_click_left ? (
+    gfx_x = mouse_x;
+    gfx_y = mouse_y;
+  
+    sprintf(#menustr,"%sShow tooltip|%sSample accurate automation (more CPU)|%sAuto bypass on stop (save CPU)|",
+            _global.mawi_eq_a4k_show_tooltip == 0 ? "!":"", 
+            sample_accurate_automation == 1 ? "!":"",
+            _global.mawi_eq_a4k_auto_bypass_on_stop == 1 ? "!":"");
+    
+    menu = gfx_showmenu(#menustr);
+    menu == 1 ? _global.mawi_eq_a4k_show_tooltip = !_global.mawi_eq_a4k_show_tooltip;
+    menu == 2 ? sample_accurate_automation = !sample_accurate_automation;
+    menu == 3 ? _global.mawi_eq_a4k_auto_bypass_on_stop = !_global.mawi_eq_a4k_auto_bypass_on_stop;
+    slider_automate(-1);
+  );
+);
+
+function slider_sample_update_(value)
+instance(slider_value)
+local()
+global()
+(
+  slider_value = value;
+);
+
+function automation_block_()
+instance (slider_index, slider_value, number_of_samples_into_block, slider_increment, change_sample_position,
+target_slider_value)
+local()
+global()
+(
+  number_of_samples_into_block = 0;
+  slider_increment = 0.0;
+  change_sample_position = slider_next_chg(slider_index, target_slider_value);
+  change_sample_position != -1 ?
+  (
+    slider_increment = (target_slider_value - slider_value) / change_sample_position;
+  );
+);
+
+function automation_sample_()
+instance (slider_index, slider_value, number_of_samples_into_block, change_sample_position, slider_increment, target_slider_value)
+global()
+(
+  number_of_samples_into_block == change_sample_position ? 
+  (
+    change_sample_position = slider_next_chg(slider_index, target_slider_value);
+    change_sample_position != number_of_samples_into_block ? 
+    (
+      slider_increment = (target_slider_value - slider_value) / (change_sample_position - number_of_samples_into_block);
+    );
+  );
+  
+  change_sample_position != -1 ? 
+  (
+    slider(slider_index) += slider_increment; 
+    update_sliders_();
+    number_of_samples_into_block += 1;
+  );
+);
+
+// slider parameter
+// EQ In
+eq_in.slider_parameter_(1, slider_eq_in, 1, 0, 1, 1);
+// HPF
+low_cut_slope.slider_parameter_(3, slider_low_cut_slope, 0, 0, 3, 1);
+low_cut_frequency.slider_parameter_log_scaled_(4, slider_low_cut_frequency, 16, 16, 4000, 0.01, 100);
+// LF
+low_type.slider_parameter_(6, slider_low_type, 0, 0, 1, 1);
+low_gain.slider_parameter_(7, slider_low_gain, 0, -18, 18, 0.01);
+low_frequency.slider_parameter_log_scaled_(8, slider_low_frequency, 100, 30, 500, 0.01, 100);
+low_q.slider_parameter_log_scaled_inverse_(9, slider_low_q, 1, 0.35, 3.5, 0.01, 1);
+// LMF
+low_mid_gain.slider_parameter_(11, slider_low_mid_gain, 0, -18, 18, 0.01);
+low_mid_frequency.slider_parameter_log_scaled_(12, slider_low_mid_frequency, 400, 100, 2500, 0.01, 400);
+low_mid_q.slider_parameter_log_scaled_inverse_(13, slider_low_mid_q, 1, 0.35, 3.5, 0.01, 1);
+// Trim
+trim.slider_parameter_(15, slider_trim, 0, -18, 18, 0.01);
+// HMF
+high_mid_gain.slider_parameter_(17, slider_high_mid_gain, 0, -18, 18, 0.01);
+high_mid_frequency.slider_parameter_log_scaled_(18, slider_high_mid_frequency, 4000, 400, 10000, 0.01, 4000);
+high_mid_q.slider_parameter_log_scaled_inverse_(19, slider_high_mid_q, 1, 0.35, 3.5, 0.01, 1);
+// HF
+high_type.slider_parameter_(21, slider_high_type, 0, 0, 1, 1);
+high_gain.slider_parameter_(22, slider_high_gain, 0, -18, 18, 0.01);
+high_frequency.slider_parameter_log_scaled_(23, slider_high_frequency, 8000, 1500, 16000, 0.01, 8000);
+high_q.slider_parameter_log_scaled_inverse_(24, slider_high_q, 1, 0.35, 3.5, 0.01, 1);
+// LPF
+high_cut_slope.slider_parameter_(26, slider_high_cut_slope, 0, 0, 3, 1);
+high_cut_frequency.slider_parameter_log_scaled_(27, slider_high_cut_frequency, 16000, 300, 16000, 0.01, 3000);
+// Phase
+phase_inv.slider_parameter_(29, slider_phase_inv, 1, 0, 1, 1);
+
+@gfx 960 240
+background_color_(25, 26, 27);
+background_img_(0, 0);
+
+current_cursor = 32512;
+
+// Options
+options.mouse_logic_();
+options.menu_();
+options.img_frame_(26, 0.05, 0, 40, 30, 1);
+
+// EQ In
+eq_in.mouse_logic_();
+eq_in.mouse_button_switch_();
+eq_in.img_frame_(18, 1, 0, 5, 79, 2);
+slider_eq_in = eq_in.slider_value;
+
+// HPF
+low_cut_slope.1.mouse_logic_();
+low_cut_slope.1.mouse_button_option_(1);
+low_cut_slope.1.img_frame_option_(19, 1, 0, 24, 281, 2);
+
+low_cut_slope.2.mouse_logic_();
+low_cut_slope.2.mouse_button_option_(2);
+low_cut_slope.2.img_frame_option_(20, 1, 0, 22, 338, 2);
+
+low_cut_slope.3.mouse_logic_();
+low_cut_slope.3.mouse_button_option_(3);
+low_cut_slope.3.img_frame_option_(21, 1, 0, 21, 390, 2);
+slider_low_cut_slope = low_cut_slope.slider_value;
+
+low_cut_frequency.mouse_logic_();
+low_cut_frequency.mouse_knob_();
+low_cut_frequency.img_frame_(5, 1, 0, 173, 288, 151);
+slider_low_cut_frequency = low_cut_frequency.stepped_value_();
+
+// LF
+low_gain.mouse_logic_();
+low_gain.mouse_knob_();
+low_gain.img_frame_(1, 1, 0, 146, 51, 151);
+slider_low_gain = low_gain.stepped_value_();
+
+low_frequency.mouse_logic_();
+low_frequency.mouse_knob_();
+low_frequency.img_frame_(2, 1, 0, 365, 53, 151);
+slider_low_frequency = low_frequency.stepped_value_();
+
+low_q.mouse_logic_();
+low_q.mouse_knob_();
+low_q.img_frame_(3, 1, 0, 474, 289, 151);
+slider_low_q = low_q.stepped_value_();
+
+low_type.mouse_logic_();
+low_type.mouse_button_switch_();
+low_type.img_frame_(4, 1, 0, 380, 298, 2);
+slider_low_type = low_type.slider_value;
+
+// LMF
+low_mid_gain.mouse_logic_();
+low_mid_gain.mouse_knob_();
+low_mid_gain.img_frame_(6, 1, 0, 575, 50, 151);
+slider_low_mid_gain = low_mid_gain.stepped_value_();
+
+low_mid_frequency.mouse_logic_();
+low_mid_frequency.mouse_knob_();
+low_mid_frequency.img_frame_(7, 1, 0, 789, 53, 151);
+slider_low_mid_frequency = low_mid_frequency.stepped_value_();
+
+low_mid_q.mouse_logic_();
+low_mid_q.mouse_knob_();
+low_mid_q.img_frame_(8, 1, 0, 685, 290, 151);
+slider_low_mid_q = low_mid_q.stepped_value_();
+
+// Trim
+trim.mouse_logic_();
+trim.mouse_knob_();
+trim.img_frame_(9, 1, 0, 887, 287, 151);
+slider_trim = trim.stepped_value_();
+
+// HMF
+high_mid_gain.mouse_logic_();
+high_mid_gain.mouse_knob_();
+high_mid_gain.img_frame_(10, 1, 0, 994, 50, 151);
+slider_high_mid_gain = high_mid_gain.stepped_value_();
+
+high_mid_frequency.mouse_logic_();
+high_mid_frequency.mouse_knob_();
+high_mid_frequency.img_frame_(11, 1, 0, 1209, 51, 151);
+slider_high_mid_frequency = high_mid_frequency.stepped_value_();
+
+high_mid_q.mouse_logic_();
+high_mid_q.mouse_knob_();
+high_mid_q.img_frame_(12, 1, 0, 1104, 289, 151);
+slider_high_mid_q = high_mid_q.stepped_value_();
+
+// HF
+high_gain.mouse_logic_();
+high_gain.mouse_knob_();
+high_gain.img_frame_(13, 1, 0, 1416, 50, 151);
+slider_high_gain = high_gain.stepped_value_();
+
+high_frequency.mouse_logic_();
+high_frequency.mouse_knob_();
+high_frequency.img_frame_(14, 1, 0, 1620, 52, 151);
+slider_high_frequency = high_frequency.stepped_value_();
+
+high_q.mouse_logic_();
+high_q.mouse_knob_();
+high_q.img_frame_(15, 1, 0, 1313, 289, 151);
+slider_high_q = high_q.stepped_value_();
+
+high_type.mouse_logic_();
+high_type.mouse_button_switch_();
+high_type.img_frame_(17, 1, 0, 1466, 298, 2);
+slider_high_type = high_type.slider_value;
+
+// LPF
+high_cut_frequency.mouse_logic_();
+high_cut_frequency.mouse_knob_();
+high_cut_frequency.img_frame_(16, 1, 0, 1595, 288, 151);
+slider_high_cut_frequency = high_cut_frequency.stepped_value_();
+
+high_cut_slope.1.mouse_logic_();
+high_cut_slope.1.mouse_button_option_(1);
+high_cut_slope.1.img_frame_option_(22, 1, 0, 1752, 276, 2);
+
+high_cut_slope.2.mouse_logic_();
+high_cut_slope.2.mouse_button_option_(2);
+high_cut_slope.2.img_frame_option_(23, 1, 0, 1752, 337, 2);
+
+high_cut_slope.3.mouse_logic_();
+high_cut_slope.3.mouse_button_option_(3);
+high_cut_slope.3.img_frame_option_(24, 1, 0, 1753, 390, 2);
+slider_high_cut_slope = high_cut_slope.slider_value;
+
+// Phase
+phase_inv.mouse_logic_();
+phase_inv.mouse_button_switch_();
+phase_inv.img_frame_(25, 1, 0, 1822, 79, 2);
+slider_phase_inv = phase_inv.slider_value;
+
+_global.mawi_eq_a4k_show_tooltip == 0 ? (
+  // tooltip config
+  // EQ In
+  eq_in.tooltip_(15, 40, 0, slider_eq_in ? "EQ: On" : "EQ: Off");
+  
+  // HPF
+  low_cut_slope.1.tooltip_(15, 255, 0, slider_low_cut_slope == 1 ? "6dB/oct HPF: On" : "6dB/oct HPF: Off");
+  low_cut_slope.2.tooltip_(15, 305, 0, slider_low_cut_slope == 2 ? "12dB/oct HPF: On" : "12dB/oct HPF: Off");
+  low_cut_slope.3.tooltip_(15, 360, 0, slider_low_cut_slope == 3 ? "18dB/oct HPF: On" : "18dB/oct HPF: Off");
+  low_cut_frequency.tooltip_(250, 280, 1, slider_low_cut_frequency >= 1000 ? "HPF Freq: %.2f kHz" : "HPF Freq: %d Hz");
+  
+  // LF
+  low_gain.tooltip_(210, 40, 1, "LF Gain: %.2f dB");
+  low_frequency.tooltip_(430, 40, 1, "LF Freq: %d Hz");
+  low_q.tooltip_(540, 280, 1, "LF Q: %.2f");
+  low_type.tooltip_(420, 276, 1, slider_low_type ? "LF Type: Bell" : "LF Type: Shelf");
+  
+  // LMF
+  low_mid_gain.tooltip_(645, 40, 1,"LMF Gain: %.2f dB");
+  low_mid_frequency.tooltip_(850, 40, 1, slider_low_mid_frequency >= 1000 ? "LMF Freq: %.2f kHz" : "LMF Freq: %d Hz");
+  low_mid_q.tooltip_(750, 280, 1, "LMF Q: %.2f");
+  
+  // Trim
+  trim.tooltip_(962, 280, 1, "Trim: %.2f dB");
+  
+  // HMF
+  high_mid_gain.tooltip_(1060, 40, 1, "HMF Gain: %.2f dB");
+  high_mid_frequency.tooltip_(1280, 40, 1, slider_high_mid_frequency >= 1000 ? "HMF Freq: %.2f kHz" : "HMF Freq: %d Hz");
+  high_mid_q.tooltip_(1172, 280, 1, "HMF Q: %.2f");
+  
+  // HF
+  high_gain.tooltip_(1490, 40, 1, "HF Gain: %.2f dB");
+  high_frequency.tooltip_(1700, 40, 1, "HF Freq: %.2f kHz");
+  high_q.tooltip_(1380, 280, 1, "HF Q: %.2f");
+  high_type.tooltip_(1500, 276, 1, slider_high_type ? "HF Type: Bell" : "HF Type: Shelf");
+  
+  // LPF
+  high_cut_slope.1.tooltip_(1905, 255, 2, slider_high_cut_slope == 1 ? "6dB/oct LPF: On" : "6dB/oct LPF: Off");
+  high_cut_slope.2.tooltip_(1905, 305, 2, slider_high_cut_slope == 2 ? "12dB/oct LPF: On" : "12dB/oct LPF: Off");
+  high_cut_slope.3.tooltip_(1905, 360, 2, slider_high_cut_slope == 3 ? "18dB/oct LPF: On" : "18dB/oct LPF: Off");
+  high_cut_frequency.tooltip_(1670, 280, 1, slider_high_cut_frequency >= 1000 ? "LPF Freq: %.2f kHz" : "LPF Freq: %d Hz");
+  
+  // Phase
+  phase_inv.tooltip_(1905, 40, 2, slider_phase_inv ? "Phase: Inverted" : "Phase: Normal");
+);
+
+slider_change ? (
+  update_sliders_();
+  slider_change = 0;
+);
+
+resize_icon_(15);
+
+gfx_setcursor(current_cursor);
+
+@slider
+// Bypass
+eq_in.slider_value = slider_eq_in;
+// HPF
+low_cut_slope.slider_value = slider_low_cut_slope;
+low_cut_frequency.slider_value = slider_low_cut_frequency;
+// LF
+low_gain.slider_value = slider_low_gain;
+low_frequency.slider_value = slider_low_frequency;
+low_q.slider_value = slider_low_q;
+low_type.slider_value = slider_low_type;
+// LMF
+low_mid_gain.slider_value = slider_low_mid_gain;
+low_mid_frequency.slider_value = slider_low_mid_frequency;
+low_mid_q.slider_value = slider_low_mid_q;
+// Trim
+trim.slider_value = slider_trim;
+// HMF
+high_mid_gain.slider_value = slider_high_mid_gain;
+high_mid_frequency.slider_value = slider_high_mid_frequency;
+high_mid_q.slider_value = slider_high_mid_q;
+// HF
+high_gain.slider_value = slider_high_gain;
+high_frequency.slider_value = slider_high_frequency;
+high_q.slider_value = slider_high_q;
+high_type.slider_value = slider_high_type;
+// LPF
+high_cut_slope.slider_value = slider_high_cut_slope;
+high_cut_frequency.slider_value = slider_high_cut_frequency;
+// Phase
+phase_inv.slider_value = slider_phase_inv;
+
+update_sliders_();
+
+@block
+sample_accurate_automation == 1 ? (
+  // EQ In
+  eq_in.automation_block_();
+  // HPF
+  low_cut_slope.automation_block_();
+  low_cut_frequency.automation_block_();
+  // LF
+  low_gain.automation_block_();
+  low_frequency.automation_block_();
+  low_q.automation_block_();
+  low_type.automation_block_();
+  // LMF
+  low_mid_gain.automation_block_();
+  low_mid_frequency.automation_block_();
+  low_mid_q.automation_block_();
+  // Trim
+  trim.automation_block_();
+  // HMF
+  high_mid_gain.automation_block_();
+  high_mid_frequency.automation_block_();
+  high_mid_q.automation_block_();
+  // HF
+  high_gain.automation_block_();
+  high_frequency.automation_block_();
+  high_q.automation_block_();
+  high_type.automation_block_();
+  // LPF
+  high_cut_frequency.automation_block_();
+  high_cut_slope.automation_block_();
+  // Phase
+  phase_inv.automation_block_();
+);
+
+@sample
+play_state >= _global.mawi_eq_a4k_auto_bypass_on_stop ? (
+  sample_accurate_automation == 1 ? (
+    // sample process
+    // EQ In
+    eq_in.automation_sample_();
+    // HPF
+    low_cut_slope.automation_sample_();
+    low_cut_frequency.automation_sample_();
+    // LF
+    low_gain.automation_sample_();
+    low_frequency.automation_sample_();
+    low_q.automation_sample_();
+    low_type.automation_sample_();
+    // LMF
+    low_mid_gain.automation_sample_();
+    low_mid_frequency.automation_sample_();
+    low_mid_q.automation_sample_();
+    // Trim
+    trim.automation_sample_();
+    // HMF
+    high_mid_gain.automation_sample_();
+    high_mid_frequency.automation_sample_();
+    high_mid_q.automation_sample_();
+    // HF
+    high_gain.automation_sample_();
+    high_frequency.automation_sample_();
+    high_q.automation_sample_();
+    high_type.automation_sample_();
+    // LPF
+    high_cut_frequency.automation_sample_();
+    high_cut_slope.automation_sample_();
+    // Phase
+    phase_inv.automation_sample_();
+    
+    // slider update
+    // EQ In
+    eq_in.slider_sample_update_(slider_eq_in);
+    // HPF
+    low_cut_slope.slider_sample_update_(slider_low_cut_slope);
+    low_cut_frequency.slider_sample_update_(slider_low_cut_frequency);
+    // LF
+    low_gain.slider_sample_update_(slider_low_gain);
+    low_frequency.slider_sample_update_(slider_low_frequency);
+    low_q.slider_sample_update_(slider_low_q);
+    low_type.slider_sample_update_(slider_low_type);
+    // LMF
+    low_mid_gain.slider_sample_update_(slider_low_mid_gain);
+    low_mid_frequency.slider_sample_update_(slider_low_mid_frequency);
+    low_mid_q.slider_sample_update_(slider_low_mid_q);
+    // Trim
+    trim.slider_sample_update_(slider_trim);
+    // HMF
+    high_mid_gain.slider_sample_update_(slider_high_mid_gain);
+    high_mid_frequency.slider_sample_update_(slider_high_mid_frequency);
+    high_mid_q.slider_sample_update_(slider_high_mid_q);
+    // HF
+    high_gain.slider_sample_update_(slider_high_gain);
+    high_frequency.slider_sample_update_(slider_high_frequency);
+    high_q.slider_sample_update_(slider_high_q);
+    high_type.slider_sample_update_(slider_high_type);
+    // LPF
+    high_cut_frequency.slider_sample_update_(slider_high_cut_frequency);
+    high_cut_slope.slider_sample_update_(slider_high_cut_slope);
+    // Phase
+    phase_inv.slider_sample_update_(slider_phase_inv);
+  );
+  
+  slider_eq_in != 0 ? (
+    // LPF ///////////////////////////////////////////////////////////
+    slider_high_cut_slope == 1 ? (
+      spl0 = high_cut_1.1.first_order_lpf_sample_processing_(spl0);
+      spl1 = high_cut_1.2.first_order_lpf_sample_processing_(spl1);
+    );
+    
+    slider_high_cut_slope == 2 ? (
+      spl0 = high_cut_2.1.second_order_filter_sample_processing_(spl0);
+      spl1 = high_cut_2.2.second_order_filter_sample_processing_(spl1);
+    );
+    
+    slider_high_cut_slope == 3 ? (
+      spl0 = high_cut_1.1.first_order_lpf_sample_processing_(spl0);
+      spl1 = high_cut_1.2.first_order_lpf_sample_processing_(spl1);
+      spl0 = high_cut_2.1.second_order_filter_sample_processing_(spl0);
+      spl1 = high_cut_2.2.second_order_filter_sample_processing_(spl1);
+    );
+  
+    // HPF ///////////////////////////////////////////////////////////////
+    slider_low_cut_slope == 1 ? (
+      spl0 = low_cut_1.1.first_order_hpf_sample_processing_(spl0);
+      spl1 = low_cut_1.2.first_order_hpf_sample_processing_(spl1);
+    );
+    
+    slider_low_cut_slope == 2 ? (
+      spl0 = low_cut_2.1.second_order_filter_sample_processing_(spl0);
+      spl1 = low_cut_2.2.second_order_filter_sample_processing_(spl1);
+    );
+    
+    slider_low_cut_slope == 3 ? (
+      spl0 = low_cut_1.1.first_order_hpf_sample_processing_(spl0);
+      spl1 = low_cut_1.2.first_order_hpf_sample_processing_(spl1);
+      spl0 = low_cut_2.1.second_order_filter_sample_processing_(spl0);
+      spl1 = low_cut_2.2.second_order_filter_sample_processing_(spl1);
+    );
+    
+    // EQ //////////////////////////////////////////////////
+    slider_high_gain != 0 ? (
+      slider_high_type == 0 ? (
+        spl0 = high_shelf.1.second_order_filter_sample_processing_(spl0);
+        spl1 = high_shelf.2.second_order_filter_sample_processing_(spl1);
+      ):(
+        spl0 = peak_1.1.second_order_filter_sample_processing_(spl0);
+        spl1 = peak_1.2.second_order_filter_sample_processing_(spl1);
+      );
+    );
+    
+    slider_high_mid_gain != 0 ? (
+      spl0 = peak_2.1.second_order_filter_sample_processing_(spl0);
+      spl1 = peak_2.2.second_order_filter_sample_processing_(spl1);
+    );
+    
+    slider_low_mid_gain != 0 ? (
+      spl0 = peak_3.1.second_order_filter_sample_processing_(spl0);
+      spl1 = peak_3.2.second_order_filter_sample_processing_(spl1);
+    );
+    
+    slider_low_gain != 0 ? (
+      slider_low_type == 0 ? (
+        spl0 = low_shelf.1.second_order_filter_sample_processing_(spl0);
+        spl1 = low_shelf.2.second_order_filter_sample_processing_(spl1);
+      ):(
+        spl0 = peak_4.1.second_order_filter_sample_processing_(spl0);
+        spl1 = peak_4.2.second_order_filter_sample_processing_(spl1);
+      );
+    );
+    // Output ///////////////////////////////////////////////
+    
+    slider_phase_inv == 1 ? (
+      spl0 *= -1;
+      spl1 *= -1;
+    );
+    
+    spl0 *= trim.dB;
+    spl1 *= trim.dB;
+  );
+);
+
