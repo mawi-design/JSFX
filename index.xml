@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<index version="1" name="mawi JSFX" commit="25f81dc6752d82abe01660183682d1871aeb942d">
+  <category name="EQ-A4k">
+    <reapack name="mawi EQ-A4k.jsfx" type="effect" desc="mawi EQ-A4k">
+      <metadata>
+        <description><![CDATA[{\rtf1\ansi\deff0{\fonttbl{\f0 \fswiss Helvetica;}{\f1 \fmodern Courier;}}
+{\colortbl;\red255\green0\blue0;\red0\green0\blue255;}
+\widowctrl\hyphauto
+
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel0 \b \fs36 EQ-A4k\par}
+{\pard \qc \f0 \sa180 \li0 \fi0 \emdash\emdash\emdash\emdash\emdash\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel1 \b \fs32 Fully parametric analog EQ\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 The EQ-A4k is based on a very well-known British analog EQ that has been used for countless productions. Some functions and extensions have been added to the EQ-A4k to make it even more universally applicable.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 The highlight at a glance:\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab analog hardware as model\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab digital filters without distortion (decramped filters)\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab 4 EQ bands, 3 HP and 3 LP filters\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab low CPU, 0 latency, optimal for recording\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab no noise or harmonic distortion, ideal for mixing and mastering\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab attractive GUI, freely scalable\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab fully automatable with sample accurate automation\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab automatic bypass when playback stops\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab open source code, i.e. modifiable\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab freeware, no annoying activation\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab JSFX is optimally integrated in REAPER\sa180\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 If you want to {\b support} my work or buy me a coffee, you can send my a donation via Paypal: mawi01@mail.de\par}
+}
+]]></description>
+      </metadata>
+      <version name="1.00" author="mawi" time="2023-08-19T18:20:02Z">
+        <changelog><![CDATA[First release :)]]></changelog>
+        <source>https://github.com/mawi-design/JSFX/raw/25f81dc6752d82abe01660183682d1871aeb942d/EQ-A4k/mawi%20EQ-A4k.jsfx</source>
+        <source file="img/background.png">https://github.com/mawi-design/JSFX/raw/25f81dc6752d82abe01660183682d1871aeb942d/EQ-A4k/img/background.png</source>
+        <source file="img/button_bypass.png">https://github.com/mawi-design/JSFX/raw/25f81dc6752d82abe01660183682d1871aeb942d/EQ-A4k/img/button_bypass.png</source>
+        <source file="img/button_high_type.png">https://github.com/mawi-design/JSFX/raw/25f81dc6752d82abe01660183682d1871aeb942d/EQ-A4k/img/button_high_type.png</source>
+        <source file="img/button_hpf12.png">https://github.com/mawi-design/JSFX/raw/25f81dc6752d82abe01660183682d1871aeb942d/EQ-A4k/img/button_hpf12.png</source>
+        <source file="img/button_hpf24.png">https://github.com/mawi-design/JSFX/raw/25f81dc6752d82abe01660183682d1871aeb942d/EQ-A4k/img/button_hpf24.png</source>
+        <source file="img/button_hpf48.png">https://github.com/mawi-design/JSFX/raw/25f81dc6752d82abe01660183682d1871aeb942d/EQ-A4k/img/button_hpf48.png</source>
+        <source file="img/button_low_type.png">https://github.com/mawi-design/JSFX/raw/25f81dc6752d82abe01660183682d1871aeb942d/EQ-A4k/img/button_low_type.png</source>
+        <source file="img/button_lpf12.png">https://github.com/mawi-design/JSFX/raw/25f81dc6752d82abe01660183682d1871aeb942d/EQ-A4k/img/button_lpf12.png</source>
+        <source file="img/button_lpf24.png">https://github.com/mawi-design/JSFX/raw/25f81dc6752d82abe01660183682d1871aeb942d/EQ-A4k/img/button_lpf24.png</source>
+        <source file="img/button_lpf48.png">https://github.com/mawi-design/JSFX/raw/25f81dc6752d82abe01660183682d1871aeb942d/EQ-A4k/img/button_lpf48.png</source>
+        <source file="img/button_phase.png">https://github.com/mawi-design/JSFX/raw/25f81dc6752d82abe01660183682d1871aeb942d/EQ-A4k/img/button_phase.png</source>
+        <source file="img/menu.png">https://github.com/mawi-design/JSFX/raw/25f81dc6752d82abe01660183682d1871aeb942d/EQ-A4k/img/menu.png</source>
+        <source file="img/poti_high_freq.png">https://github.com/mawi-design/JSFX/raw/25f81dc6752d82abe01660183682d1871aeb942d/EQ-A4k/img/poti_high_freq.png</source>
+        <source file="img/poti_high_gain.png">https://github.com/mawi-design/JSFX/raw/25f81dc6752d82abe01660183682d1871aeb942d/EQ-A4k/img/poti_high_gain.png</source>
+        <source file="img/poti_high_mid_freq.png">https://github.com/mawi-design/JSFX/raw/25f81dc6752d82abe01660183682d1871aeb942d/EQ-A4k/img/poti_high_mid_freq.png</source>
+        <source file="img/poti_high_mid_gain.png">https://github.com/mawi-design/JSFX/raw/25f81dc6752d82abe01660183682d1871aeb942d/EQ-A4k/img/poti_high_mid_gain.png</source>
+        <source file="img/poti_high_mid_q.png">https://github.com/mawi-design/JSFX/raw/25f81dc6752d82abe01660183682d1871aeb942d/EQ-A4k/img/poti_high_mid_q.png</source>
+        <source file="img/poti_high_q.png">https://github.com/mawi-design/JSFX/raw/25f81dc6752d82abe01660183682d1871aeb942d/EQ-A4k/img/poti_high_q.png</source>
+        <source file="img/poti_hpf.png">https://github.com/mawi-design/JSFX/raw/25f81dc6752d82abe01660183682d1871aeb942d/EQ-A4k/img/poti_hpf.png</source>
+        <source file="img/poti_low_freq.png">https://github.com/mawi-design/JSFX/raw/25f81dc6752d82abe01660183682d1871aeb942d/EQ-A4k/img/poti_low_freq.png</source>
+        <source file="img/poti_low_gain.png">https://github.com/mawi-design/JSFX/raw/25f81dc6752d82abe01660183682d1871aeb942d/EQ-A4k/img/poti_low_gain.png</source>
+        <source file="img/poti_low_mid_freq.png">https://github.com/mawi-design/JSFX/raw/25f81dc6752d82abe01660183682d1871aeb942d/EQ-A4k/img/poti_low_mid_freq.png</source>
+        <source file="img/poti_low_mid_gain.png">https://github.com/mawi-design/JSFX/raw/25f81dc6752d82abe01660183682d1871aeb942d/EQ-A4k/img/poti_low_mid_gain.png</source>
+        <source file="img/poti_low_mid_q.png">https://github.com/mawi-design/JSFX/raw/25f81dc6752d82abe01660183682d1871aeb942d/EQ-A4k/img/poti_low_mid_q.png</source>
+        <source file="img/poti_low_q.png">https://github.com/mawi-design/JSFX/raw/25f81dc6752d82abe01660183682d1871aeb942d/EQ-A4k/img/poti_low_q.png</source>
+        <source file="img/poti_lpf.png">https://github.com/mawi-design/JSFX/raw/25f81dc6752d82abe01660183682d1871aeb942d/EQ-A4k/img/poti_lpf.png</source>
+        <source file="img/poti_trim.png">https://github.com/mawi-design/JSFX/raw/25f81dc6752d82abe01660183682d1871aeb942d/EQ-A4k/img/poti_trim.png</source>
+        <source file="mawi_EQ-A4k_Manual.pdf">https://github.com/mawi-design/JSFX/raw/25f81dc6752d82abe01660183682d1871aeb942d/EQ-A4k/mawi_EQ-A4k_Manual.pdf</source>
+      </version>
+    </reapack>
+  </category>
+  <category name="EQ-P3B">
+    <reapack name="mawi_EQ-P3B.jsfx" type="effect" desc="mawi EQ-P3B">
+      <metadata>
+        <description><![CDATA[{\rtf1\ansi\deff0{\fonttbl{\f0 \fswiss Helvetica;}{\f1 \fmodern Courier;}}
+{\colortbl;\red255\green0\blue0;\red0\green0\blue255;}
+\widowctrl\hyphauto
+
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel0 \b \fs36 EQ-P3B\par}
+{\pard \qc \f0 \sa180 \li0 \fi0 \emdash\emdash\emdash\emdash\emdash\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel1 \b \fs32 Vintage passive EQ\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 The EQ-P3B is modeled on a legendary passive equalizer developed in the 1950s. It is one of the most appreciated and iconic equalizers in audio production and has had a great influence on the sound design of many music productions. Some functions have been changed to the EQ-P3B to make it even more universally applicable.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 The highlight at a glance:\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab analog hardware as model\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab simultaneous frequency boosts and cuts\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab vintage flair with rich and harmonically pleasing sound\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab low CPU, 0 latency, optimal for recording\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab no noise, ideal for mixing and mastering\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab attractive GUI, freely scalable\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab fully automatable with sample accurate automation\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab automatic bypass when playback stops\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab open source code, i.e. modifiable\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab freeware, no annoying activation\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab JSFX is optimally integrated in REAPER\sa180\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 If you want to {\b support} my work or buy me a coffee, you can send my a donation via Paypal: mawi01@mail.de\par}
+}
+]]></description>
+      </metadata>
+      <version name="1.00" author="mawi" time="2023-08-19T18:20:02Z">
+        <changelog><![CDATA[First release :)]]></changelog>
+        <source>https://github.com/mawi-design/JSFX/raw/25f81dc6752d82abe01660183682d1871aeb942d/EQ-P3B/mawi_EQ-P3B.jsfx</source>
+        <source file="img/background.png">https://github.com/mawi-design/JSFX/raw/25f81dc6752d82abe01660183682d1871aeb942d/EQ-P3B/img/background.png</source>
+        <source file="img/button_eq_in.png">https://github.com/mawi-design/JSFX/raw/25f81dc6752d82abe01660183682d1871aeb942d/EQ-P3B/img/button_eq_in.png</source>
+        <source file="img/knob_eq_on.png">https://github.com/mawi-design/JSFX/raw/25f81dc6752d82abe01660183682d1871aeb942d/EQ-P3B/img/knob_eq_on.png</source>
+        <source file="img/knob_high_atten.png">https://github.com/mawi-design/JSFX/raw/25f81dc6752d82abe01660183682d1871aeb942d/EQ-P3B/img/knob_high_atten.png</source>
+        <source file="img/knob_high_atten_kcs.png">https://github.com/mawi-design/JSFX/raw/25f81dc6752d82abe01660183682d1871aeb942d/EQ-P3B/img/knob_high_atten_kcs.png</source>
+        <source file="img/knob_high_boost.png">https://github.com/mawi-design/JSFX/raw/25f81dc6752d82abe01660183682d1871aeb942d/EQ-P3B/img/knob_high_boost.png</source>
+        <source file="img/knob_high_boost_bandwidth.png">https://github.com/mawi-design/JSFX/raw/25f81dc6752d82abe01660183682d1871aeb942d/EQ-P3B/img/knob_high_boost_bandwidth.png</source>
+        <source file="img/knob_high_boost_kcs.png">https://github.com/mawi-design/JSFX/raw/25f81dc6752d82abe01660183682d1871aeb942d/EQ-P3B/img/knob_high_boost_kcs.png</source>
+        <source file="img/knob_low_atten.png">https://github.com/mawi-design/JSFX/raw/25f81dc6752d82abe01660183682d1871aeb942d/EQ-P3B/img/knob_low_atten.png</source>
+        <source file="img/knob_low_boost.png">https://github.com/mawi-design/JSFX/raw/25f81dc6752d82abe01660183682d1871aeb942d/EQ-P3B/img/knob_low_boost.png</source>
+        <source file="img/knob_low_cps.png">https://github.com/mawi-design/JSFX/raw/25f81dc6752d82abe01660183682d1871aeb942d/EQ-P3B/img/knob_low_cps.png</source>
+        <source file="img/lamp_eq_on.png">https://github.com/mawi-design/JSFX/raw/25f81dc6752d82abe01660183682d1871aeb942d/EQ-P3B/img/lamp_eq_on.png</source>
+        <source file="img/menu.png">https://github.com/mawi-design/JSFX/raw/25f81dc6752d82abe01660183682d1871aeb942d/EQ-P3B/img/menu.png</source>
+        <source file="mawi_EQ-P3B_Manual.pdf">https://github.com/mawi-design/JSFX/raw/25f81dc6752d82abe01660183682d1871aeb942d/EQ-P3B/mawi_EQ-P3B_Manual.pdf</source>
+      </version>
+    </reapack>
+  </category>
+</index>
