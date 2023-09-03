@@ -1,7 +1,13 @@
 desc:mawi EQ-P3B
 /*
-version: 1.00
-changelog: First release :)
+version: 1.01
+changelog: 
+  * New GUI
+  * New trim knob
+  * New decramped filter
+  * Knobs rescaled
+  * Code tidied
+  * Manual updated
 tags: EQ, Filter
 author: mawi
 copyright (C) 2023 and later mawi
@@ -41,25 +47,25 @@ slider1:slider_eq_bypass=1<0,1,1{Out,In}>-EQ In
 //slider2:
 slider3:slider_low_shelf_boost=0<0,10,0.01>-Lo Boost
 slider4:slider_low_shelf_atten=0<0,10,0.01>-Lo Atten
-slider5:slider_low_shelf_frequency=0<0,3,1{20 Hz,30 Hz,60 Hz,100 Hz}>-Lo CPS
+slider5:slider_low_shelf_frequency=1<0,3,1{20 Hz,30 Hz,60 Hz,100 Hz}>-Lo CPS
 //slider6:
 slider7:slider_high_peak_boost=0<0,10,0.01>-Hi Boost
 slider8:slider_high_peak_bandwidth=5<0,10,0.01>-Hi Bandwidth
-slider9:slider_high_peak_frequency=1<0,6,1{3 kHz,4 kHz,5 kHz,8 kHz,10 kHz,12 kHz,16 kHz}>-Hi KCS Boost
+slider9:slider_high_peak_frequency=0<0,6,1{3 kHz,4 kHz,5 kHz,8 kHz,10 kHz,12 kHz,16 kHz}>-Hi KCS Boost
 //slider10:
 slider11:slider_high_shelf_atten=0<0,10,0.01>-Hi Atten
 slider12:slider_high_shelf_frequency=2<0,2,1{5 kHz,10 kHz,20 kHz}>-Hi KCS Atten
 //slider13:
 slider14:slider_eq_power=1<0,1,1{Off,On}>-Power
 //slider15:
-slider16:slider_gain=0<-18,18,0.01>-Gain (dB)
+slider16:slider_trim=0<-18,18,0.01>-Trim (dB)
 
 options:no_meter
 
 @serialize
-file_var(0,_global.mawi_eq_p3b_show_tooltip);
-file_var(0,sample_accurate_automation);
-file_var(0,_global.mawi_eq_p3b_auto_bypass_on_stop);
+file_var(0, _global.mawi_eq_p3b_show_tooltip);
+file_var(0, sample_accurate_automation);
+file_var(0, _global.mawi_eq_p3b_auto_bypass_on_stop);
 
 @init
 gfx_loadimg(0, "./img/background.png");
@@ -75,6 +81,7 @@ gfx_loadimg(9, "./img/knob_high_atten_kcs.png");
 gfx_loadimg(10, "./img/lamp_eq_on.png");
 gfx_loadimg(11, "./img/knob_eq_on.png");
 gfx_loadimg(12, "./img/menu.png");
+gfx_loadimg(13, "./img/knob_trim.png");
 
 degrees = $pi/180;
 
@@ -83,16 +90,16 @@ instance()
 local()
 global(gfx_clear)
 (
-  gfx_clear = red + green*256 + blue*65536;
+  gfx_clear = red + green * 256 + blue * 65536;
 );
 
 function background_img_(img_file_id, rotation)
-instance(img_size_w, img_size_h)
+instance(img_width, img_height)
 local()
 global(gfx_x, gfx_y, gfx_w, gui_scale_factor, degrees)
 (
-  gfx_getimgdim(img_file_id, img_size_w, img_size_h);
-  gui_scale_factor = gfx_w / img_size_w;
+  gfx_getimgdim(img_file_id, img_width, img_height);
+  gui_scale_factor = gfx_w / img_width;
   
   gfx_x = gfx_y = 0;
   gfx_blit(img_file_id, gui_scale_factor, rotation * degrees);
@@ -105,41 +112,71 @@ global(gfx_ext_flags, gfx_w, gfx_h, gui_scale_factor)
 (
   gfx_ext_flags == 0 ? (
     gfx_set(1, 1, 1, 0.5);
-    //icon_size *= gui_scale_factor;
+    // icon_size *= gui_scale_factor;
     gfx_triangle(gfx_w, gfx_h, gfx_w, gfx_h - icon_size, gfx_w - icon_size, gfx_h);
   );
 );
 
-// bandpass
-function biquad_direct_(xn)
-instance(a0, a1, a2, b1, b2, x_z2, x_z1, y_z2, y_z1, yn)
+// peak
+function cosh_(x) 
+instance()
 local()
 global()
 (
-  yn = this..a0 * xn + this..a1 * x_z1 + this..a2 * x_z2 - this..b1 * y_z1 - this..b2 * y_z2;
-  
-  x_z2 = x_z1;
-  x_z1 = xn;
-  
-  y_z2 = y_z1;
-  y_z1 = yn;
-  
-  yn;
+  (exp(x) + exp(-x)) / 2;
 );
 
-function BPF2_(frequency, Q_)
-instance(K, delta, a0, a1, a2, b1, b2)
+function peak_coefficients_(slider_frequency, slider_gain, slider_q)
+instance(G, omega, omega_0, q, phi_0, phi_1, phi_2, a1, a2, A_0, A_1, A_2, R_1, R_2, B_0, B_2, B_1, W, b0, b1, b2)
 local()
 global(srate)
 (
-  K = tan($pi * frequency / srate);
-  delta = sqr(K) * Q_ + K + Q_;
-   
-  a0 = K / delta;
-  a1 = 0;
-  a2 = -K / delta;
-  b1 = 2 * Q_ * (sqr(K) - 1) / delta;
-  b2 = (sqr(K) * Q_ - K + Q_) / delta;
+  G = 10^(slider_gain / 20);
+  omega = 2 * $pi * slider_frequency / srate;
+  omega_0 = omega;
+  q = 1 / (sqrt(G) * slider_q);
+  
+  phi_0 = 1 - sin(omega / 2)^2;
+  phi_1 = sin(omega / 2)^2;
+  phi_2 = 4 * phi_0 * phi_1;
+  
+  a1 = q <= 1 ?
+       -2 * exp(-q * omega_0) * cos(sqrt(1 - sqr(q)) * omega_0) :
+       -2 * exp(-q * omega_0) * cosh_(sqrt(sqr(q) - 1) * omega_0);
+  a2 = exp(-2 * q * omega_0);
+  
+  A_0 = sqr(1 + a1 + a2);
+  A_1 = sqr(1 - a1 + a2);
+  A_2 = -4 * a2;
+  
+  R_1 = ( A_0 * phi_0 + A_1 * phi_1 + A_2 * phi_2) * sqr(G);
+  R_2 = (-A_0 + A_1 + 4 * (phi_0 - phi_1) * A_2) * sqr(G);
+  
+  B_0 = A_0;
+  B_2 = (R_1 - R_2 * phi_1 - B_0) / (4 * sqr(phi_1));
+  B_1 = R_2 + B_0 + 4 * (phi_1 - phi_0) * B_2;
+  
+  W = 0.5 * (sqrt(B_0) + sqrt(B_1));
+  
+  b0 = 0.5 * (W + sqrt(sqr(W) + B_2));
+  b1 = 0.5 * (sqrt(B_0) - sqrt(B_1));
+  b2 = -B_2 / (4 * b0);
+);
+
+function peak_processing_(input)
+instance(a1, a2, b0, b1, b2, v_0, v_1, v_2, w_0, w_1, w_2, output)
+local()
+global()
+(
+  v_0 = input;
+  w_0 = - this..a1 * w_1 - this..a2 * w_2 + this..b0 * v_0 + this..b1 * v_1 + this..b2 * v_2;
+  
+  output = w_0;
+  
+  v_2 = v_1;
+  w_2 = w_1;
+  v_1 = v_0;
+  w_1 = w_0;
 );
 
 // lowpass
@@ -174,6 +211,7 @@ global()
 (
   output = this..G_HP * (input - x_1);
   x_1 = x_1 + 2 * this..g * output;
+  
   output;
 );
 
@@ -182,7 +220,7 @@ instance(dB)
 local()
 global()
 (
-  dB = 10^(value/20);
+  dB = 10^(value / 20);
 );
 
 function slider_parameter_linear_(index, value, default, minimum, maximum, step)
@@ -205,7 +243,7 @@ instance(slider_value, slider_step)
 local()
 global()
 (
-  slider_step === 0 ? slider_value : floor(slider_value/slider_step + 0.000001) * slider_step;
+  slider_step === 0 ? slider_value : floor(slider_value / slider_step + 0.000001) * slider_step;
 );
 
 function slider_lin_scaled_to_normalized_()
@@ -213,9 +251,9 @@ instance(slider_value, slider_minimum, slider_maximum, slider_normalized)
 local()
 global()
 (
-  slider_value = min(max(slider_value,slider_minimum),slider_maximum);
+  slider_value = min(max(slider_value, slider_minimum), slider_maximum);
   slider_normalized = (slider_value - slider_minimum) / (slider_maximum - slider_minimum);
-  slider_normalized = min(max(slider_normalized,0),1);
+  slider_normalized = min(max(slider_normalized, 0), 1);
 );
 
 function slider_normalized_to_lin_scaled_()
@@ -223,14 +261,14 @@ instance(slider_normalized, slider_value, slider_minimum, slider_maximum, slider
 local()
 global()
 (
-  slider_normalized = min(max(slider_normalized,0),1);
+  slider_normalized = min(max(slider_normalized,0), 1);
   slider_value = slider_normalized * (slider_maximum - slider_minimum) + slider_minimum;
   slider_value = min(max(slider_value, slider_minimum), slider_maximum);
 );
 
 function img_frame_(file_id, scaling, rotation, pos_x, pos_y, frames)
 instance(slider_value, slider_minimum, slider_maximum, img_scaling,
-img_rotation, img_pos_x, img_pos_y, img_size_w, img_size_h, slider_normalized)
+img_rotation, img_pos_x, img_pos_y, img_width, img_height, slider_normalized)
 local(img_file_id, img_frames, img_frame, img_frame_pos_x, img_frame_pos_y)
 global(gfx_x, gfx_y, gfx_a, gui_scale_factor, degrees)
 (
@@ -241,20 +279,20 @@ global(gfx_x, gfx_y, gfx_a, gui_scale_factor, degrees)
   img_pos_x = pos_x;
   img_pos_y = pos_y;
   img_frames = frames;
-  gfx_getimgdim(img_file_id, img_size_w, img_size_h);
-  img_size_h /= img_frames;
+  gfx_getimgdim(img_file_id, img_width, img_height);
+  img_height /= img_frames;
   
   // calculate image frame
   img_frame = floor((img_frames - 1) * slider_normalized);
   img_frame_pos_x = 0;
-  img_frame_pos_y = img_size_h * img_frame;
+  img_frame_pos_y = img_height * img_frame;
   
   // draw image frame
   gfx_x = img_pos_x * gui_scale_factor;
   gfx_y = img_pos_y * gui_scale_factor;
-  //gfx_a = 0.5;
+  //gfx_a = 0.5; //
   gfx_blit(img_file_id, img_scaling * gui_scale_factor, img_rotation * 
-  degrees, img_frame_pos_x, img_frame_pos_y, img_size_w, img_size_h);
+  degrees, img_frame_pos_x, img_frame_pos_y, img_width, img_height);
 );
 
 function mouse_button_switch_()
@@ -318,7 +356,7 @@ global(mouse_cap, mouse_wheel, mouse_y, slider_change, current_cursor)
 );
 
 function mouse_logic_()
-instance(img_scaling, img_pos_x, img_pos_y, img_size_w, img_size_h,
+instance(img_scaling, img_pos_x, img_pos_y, img_width, img_height,
 mouse_over, mouse_drag, mouse_scroll, mouse_click_left, mouse_click_right,
 mouse_click_left_count, mouse_click_right_count,  
 mouse_click_left_time, mouse_click_right_time,
@@ -357,10 +395,10 @@ global(mouse_cap, mouse_x, mouse_y, mouse_wheel, gui_scale_factor)
   // collision / mouse over
   mouse_x >= img_pos_x * gui_scale_factor &&
   mouse_x <= img_pos_x * gui_scale_factor + 
-             img_size_w * img_scaling * gui_scale_factor &&
+             img_width * img_scaling * gui_scale_factor &&
   mouse_y >= img_pos_y * gui_scale_factor &&
   mouse_y <= img_pos_y * gui_scale_factor +
-             img_size_h * img_scaling * gui_scale_factor ? (
+             img_height * img_scaling * gui_scale_factor ? (
     !mouse_cap ? mouse_over = 1;
      mouse_cap ? mouse_click_left_count >= 1;
      mouse_over && mouse_click_left && mouse_click_left_count ? mouse_drag = 1;
@@ -388,11 +426,12 @@ _global.mawi_eq_p3b_auto_bypass_on_stop)
     gfx_y = mouse_y;
   
     sprintf(#menustr,"%sShow tooltip|%sSample accurate automation (more CPU)|%sAuto bypass on stop (save CPU)|",
-            _global.mawi_eq_p3b_show_tooltip == 0 ? "!":"", 
-            sample_accurate_automation == 1 ? "!":"",
-            _global.mawi_eq_p3b_auto_bypass_on_stop == 1 ? "!":"");
+            _global.mawi_eq_p3b_show_tooltip == 0 ? "!" : "", 
+            sample_accurate_automation == 1 ? "!" : "",
+            _global.mawi_eq_p3b_auto_bypass_on_stop == 1 ? "!" : "");
     
     menu = gfx_showmenu(#menustr);
+  
     menu == 1 ? _global.mawi_eq_p3b_show_tooltip = !_global.mawi_eq_p3b_show_tooltip;
     menu == 2 ? sample_accurate_automation = !sample_accurate_automation;
     menu == 3 ? _global.mawi_eq_p3b_auto_bypass_on_stop = !_global.mawi_eq_p3b_auto_bypass_on_stop;
@@ -401,34 +440,40 @@ _global.mawi_eq_p3b_auto_bypass_on_stop)
 );
 
 function update_sliders_() (
-  // midpoint offset
-  midpoint = (8.5 - 0) / (10 - 0);
-  base = ((midpoint-1) / midpoint)^2;
+  // slider midpoint offset
+  midpoint = (7.5 - 0) / (10 - 0);
+  base = ((midpoint - 1) / midpoint)^2;
   
   // low shelf boost
   low_shelf_boost.slider_log_scaled = (10 - 0) * ((base^(slider_low_shelf_boost * 0.1) -1) / (base - 1)) + 0;
-  low_shelf_boost_value = low_shelf_boost.slider_log_scaled * 0.1 * (15 - -48) + -48;
-  low_shelf_boost_value = min(max(low_shelf_boost_value, -48), 15);
+  low_shelf_boost_value = low_shelf_boost.slider_log_scaled * 0.1 * (17 - -48) + -48;
+  low_shelf_boost_value = min(max(low_shelf_boost_value, -48), 17);
   low_shelf_boost_inv = (10 - low_shelf_boost.slider_log_scaled) + 0.5;
   low_shelf_boost_inv = min(max(low_shelf_boost_inv, 0.5), 10);
-  slider_low_shelf_frequency == 0 ? low_shelf_frequency = 20;
-  slider_low_shelf_frequency == 1 ? low_shelf_frequency = 30;
-  slider_low_shelf_frequency == 2 ? low_shelf_frequency = 60;
-  slider_low_shelf_frequency == 3 ? low_shelf_frequency = 100;
-  low_shelf_boost_frequency.lpf_coefficients_(low_shelf_frequency * 2 * low_shelf_boost_inv);
+  slider_low_shelf_frequency == 0 ? low_shelf_frequency = 20 * 1.2;
+  slider_low_shelf_frequency == 1 ? low_shelf_frequency = 30 * 1.5;
+  slider_low_shelf_frequency == 2 ? low_shelf_frequency = 60 * 1.5;
+  slider_low_shelf_frequency == 3 ? low_shelf_frequency = 100 * 1.5;
+  low_shelf_boost_frequency.lpf_coefficients_(low_shelf_frequency * low_shelf_boost_inv);
   low_shelf_boost.dB_conversion_(low_shelf_boost_value);
+  
   // low shelf atten
   low_shelf_atten.slider_log_scaled = (10 - 0) * ((base^(slider_low_shelf_atten * 0.1) -1) / (base - 1)) + 0;
-  low_shelf_atten_value = low_shelf_atten.slider_log_scaled * 0.1 * (-0.9 - -48) + -48;
-  low_shelf_atten_value = min(max(low_shelf_atten_value, -48), -0.9);
+  low_shelf_atten_value = low_shelf_atten.slider_log_scaled * 0.1 * (-0.9 - -36) + -36;
+  low_shelf_atten_value = min(max(low_shelf_atten_value, -36), -0.9);
   low_shelf_atten_inv = (10.6 - low_shelf_atten.slider_log_scaled) + 0.5;
   low_shelf_atten_inv = min(max(low_shelf_atten_inv, 0.5), 10.6);
-  low_shelf_atten_frequency.lpf_coefficients_(low_shelf_frequency * 15 * low_shelf_atten_inv);
+  low_shelf_atten_frequency.lpf_coefficients_(low_shelf_frequency * 10 * low_shelf_atten_inv);
   low_shelf_atten.dB_conversion_(low_shelf_atten_value);
+  
   // high peak boost
-  high_peak_boost.slider_log_scaled = (10 - 0) * ((base^(slider_high_peak_boost * 0.1) -1)/(base - 1)) + 0;
-  high_peak_boost_value = high_peak_boost.slider_log_scaled * 0.1 * (15 - -48) + -48;
-  high_peak_boost_value = min(max(high_peak_boost_value, -48), 15);
+  //// slider midpoint offset
+  midpoint_high_peak_boost = (2 - 0) / (10 - 0);
+  base_high_peak_boost = ((midpoint_high_peak_boost - 1) / midpoint_high_peak_boost)^2;
+  
+  high_peak_boost.slider_log_scaled = (10 - 0) * ((base_high_peak_boost^(slider_high_peak_boost * 0.1) -1)/(base_high_peak_boost - 1)) + 0;
+  high_peak_boost_value = high_peak_boost.slider_log_scaled * 0.1 * (18 - 0) + 0;
+  high_peak_boost_value = min(max(high_peak_boost_value, 0), 18);
   high_peak_bandwidth = (slider_high_peak_bandwidth * 0.1 - 1.5) / (0.5 - 1.5);
   slider_high_peak_frequency == 0 ? high_peak_boost_frequency = 3000;
   slider_high_peak_frequency == 1 ? high_peak_boost_frequency = 4000;
@@ -437,8 +482,8 @@ function update_sliders_() (
   slider_high_peak_frequency == 4 ? high_peak_boost_frequency = 10000;
   slider_high_peak_frequency == 5 ? high_peak_boost_frequency = 12000;
   slider_high_peak_frequency == 6 ? high_peak_boost_frequency = 16000;
-  high_peak_boost_frequency.BPF2_(high_peak_boost_frequency, 0.15 * high_peak_bandwidth * slider_high_peak_boost);
-  high_peak_boost.dB_conversion_(high_peak_boost_value);
+  high_peak_boost_frequency.peak_coefficients_(high_peak_boost_frequency, high_peak_boost_value, high_peak_bandwidth);
+  
   // high shelf atten
   high_shelf_atten.slider_log_scaled = (10 - 0) * ((base^(slider_high_shelf_atten * 0.1) -1) / (base -1)) + 0;
   high_shelf_atten_value = high_shelf_atten.slider_log_scaled * 0.1 * (-0.9 - -48) + -48;
@@ -448,8 +493,9 @@ function update_sliders_() (
   slider_high_shelf_frequency == 2 ? high_shelf_frequency = 20000 * 0.135;
   high_shelf_atten_frequency.hpf_coefficients_(high_shelf_frequency);
   high_shelf_atten.dB_conversion_(high_shelf_atten_value);
+  
   // output
-  gain.dB_conversion_(slider_gain);
+  trim.dB_conversion_(slider_trim);
 );
 
 function slider_sample_update_(value)
@@ -467,7 +513,7 @@ local()
 global()
 (
   number_of_samples_into_block = 0;
-  slider_increment = 0.0;
+  slider_increment = 0;
   change_sample_position = slider_next_chg(slider_index, target_slider_value);
   change_sample_position != -1 ?
   (
@@ -497,20 +543,17 @@ global()
 );
 
 function tooltip_(pos_x, pos_y, alignment, text)
-instance(
-mouse_over, mouse_drag, mouse_scroll, 
+instance(mouse_over, mouse_drag, mouse_scroll, 
 mouse_click_left_count, 
 tooltip_time_hover, tooltip_timer, 
 tooltip_time_delta, tooltip, 
 tooltip_fade_alpha, slider_value)
-local(
-tooltip_pos_x, tooltip_pos_y, tooltip_alignment, 
-tooltip_text, textbox_size_w, textbox_size_h, 
-value_size_w, value_size_h, 
-padding_size_w, padding_size_h,
-border_size_w, border_size_h)
-global(
-gfx_x, gfx_y, gfx_r, gfx_g, gfx_b, gfx_a, 
+local(tooltip_pos_x, tooltip_pos_y, tooltip_alignment, 
+tooltip_text, textbox_width, textbox_height, 
+value_width, value_height, 
+padding_width, padding_height,
+border_width, border_height)
+global(gfx_x, gfx_y, gfx_r, gfx_g, gfx_b, gfx_a, 
 gui_scale_factor, #tooltip, time_current)
 (
   tooltip_pos_x = pos_x;
@@ -527,32 +570,32 @@ gui_scale_factor, #tooltip, time_current)
       slider_value < 1000 ? (
         sprintf(#tooltip, tooltip_text, slider_value);
       ):(
-        sprintf(#tooltip, tooltip_text, slider_value/1000);
+        sprintf(#tooltip, tooltip_text, slider_value / 1000);
       );
-      gfx_measurestr(#tooltip, value_size_w *= gui_scale_factor, value_size_h *= gui_scale_factor);
+      gfx_measurestr(#tooltip, value_width *= gui_scale_factor, value_height *= gui_scale_factor);
       // textbox
       tooltip_pos_x *= gui_scale_factor;
       tooltip_pos_y *= gui_scale_factor;
-      padding_size_w = 20 * gui_scale_factor;
-      padding_size_h = 10 * gui_scale_factor;
-      border_size_w = 4 * gui_scale_factor;
-      border_size_h = 4 * gui_scale_factor;
-      textbox_size_w = value_size_w + padding_size_w;
-      textbox_size_h = value_size_h + padding_size_h;
+      padding_width = 20 * gui_scale_factor;
+      padding_height = 10 * gui_scale_factor;
+      border_width = 4 * gui_scale_factor;
+      border_height = 4 * gui_scale_factor;
+      textbox_width = value_width + padding_width;
+      textbox_height = value_height + padding_height;
       // left-aligned
       tooltip_alignment == 0 ? (
         // border
-        gfx_x = tooltip_pos_x - border_size_w;
-        gfx_y = tooltip_pos_y - border_size_h - textbox_size_h/2;
+        gfx_x = tooltip_pos_x - border_width;
+        gfx_y = tooltip_pos_y - border_height - textbox_height / 2;
         gfx_set(0, 0, 0, tooltip_fade_alpha - 0.6);
-        gfx_rect(gfx_x, gfx_y, textbox_size_w + 2*border_size_w, textbox_size_h + 2*border_size_h);
+        gfx_rect(gfx_x, gfx_y, textbox_width + 2 * border_width, textbox_height + 2 * border_height);
         // box
         gfx_x = tooltip_pos_x;
-        gfx_y = tooltip_pos_y - textbox_size_h/2;
+        gfx_y = tooltip_pos_y - textbox_height / 2;
         gfx_set(0.9, 0.9, 0.9, tooltip_fade_alpha);
-        gfx_rect(gfx_x, gfx_y, textbox_size_w, textbox_size_h);
+        gfx_rect(gfx_x, gfx_y, textbox_width, textbox_height);
         // text
-        gfx_x = tooltip_pos_x + padding_size_w/2;
+        gfx_x = tooltip_pos_x + padding_width / 2;
         gfx_y = tooltip_pos_y;
         gfx_set(0.1, 0.1, 0.1, tooltip_fade_alpha);
         gfx_drawstr(#tooltip, 0+4+256, gfx_x, gfx_y);
@@ -560,15 +603,15 @@ gui_scale_factor, #tooltip, time_current)
       // centered
       tooltip_alignment == 1 ? (
         // border
-        gfx_x = tooltip_pos_x - border_size_w - textbox_size_w/2;
-        gfx_y = tooltip_pos_y - border_size_h - textbox_size_h/2;
+        gfx_x = tooltip_pos_x - border_width - textbox_width / 2;
+        gfx_y = tooltip_pos_y - border_height - textbox_height / 2;
         gfx_set(0, 0, 0, tooltip_fade_alpha - 0.6);
-        gfx_rect(gfx_x, gfx_y, textbox_size_w + 2*border_size_w, textbox_size_h + 2*border_size_h);
+        gfx_rect(gfx_x, gfx_y, textbox_width + 2 * border_width, textbox_height + 2 * border_height);
         // box
-        gfx_x = tooltip_pos_x - textbox_size_w/2;
-        gfx_y = tooltip_pos_y - textbox_size_h/2;
+        gfx_x = tooltip_pos_x - textbox_width / 2;
+        gfx_y = tooltip_pos_y - textbox_height / 2;
         gfx_set(0.9, 0.9, 0.9, tooltip_fade_alpha);
-        gfx_rect(gfx_x, gfx_y, textbox_size_w, textbox_size_h);
+        gfx_rect(gfx_x, gfx_y, textbox_width, textbox_height);
         // text
         gfx_x = tooltip_pos_x;
         gfx_y = tooltip_pos_y;
@@ -578,17 +621,17 @@ gui_scale_factor, #tooltip, time_current)
       // right-aligned
       tooltip_alignment == 2 ? (
         // border
-        gfx_x = tooltip_pos_x - border_size_w - textbox_size_w;
-        gfx_y = tooltip_pos_y - border_size_h - textbox_size_h/2;
+        gfx_x = tooltip_pos_x - border_width - textbox_width;
+        gfx_y = tooltip_pos_y - border_height - textbox_height / 2;
         gfx_set(0, 0, 0, tooltip_fade_alpha - 0.6);
-        gfx_rect(gfx_x, gfx_y, textbox_size_w + 2*border_size_w, textbox_size_h + 2*border_size_h);
+        gfx_rect(gfx_x, gfx_y, textbox_width + 2 * border_width, textbox_height + 2 * border_height);
         // box
-        gfx_x = tooltip_pos_x - textbox_size_w;
-        gfx_y = tooltip_pos_y - textbox_size_h/2;
+        gfx_x = tooltip_pos_x - textbox_width;
+        gfx_y = tooltip_pos_y - textbox_height / 2;
         gfx_set(0.9, 0.9, 0.9, tooltip_fade_alpha);
-        gfx_rect(gfx_x, gfx_y, textbox_size_w, textbox_size_h);
+        gfx_rect(gfx_x, gfx_y, textbox_width, textbox_height);
         // text
-        gfx_x = tooltip_pos_x - padding_size_w/2;
+        gfx_x = tooltip_pos_x - padding_width / 2;
         gfx_y = tooltip_pos_y;
         gfx_set(0.1, 0.1, 0.1, tooltip_fade_alpha);
         gfx_drawstr(#tooltip, 2+4+256, gfx_x, gfx_y);
@@ -621,16 +664,18 @@ eq_bypass.slider_parameter_linear_(1, slider_eq_bypass, 1, 0, 1, 1);
 // low shelf
 low_shelf_boost.slider_parameter_linear_(3, slider_low_shelf_boost, 0, 0, 10, 0.01);
 low_shelf_atten.slider_parameter_linear_(4, slider_low_shelf_atten, 0, 0, 10, 0.01);
-low_shelf_frequency.slider_parameter_linear_(5, slider_low_shelf_frequency, 0, 0, 3, 1);
+low_shelf_frequency.slider_parameter_linear_(5, slider_low_shelf_frequency, 1, 0, 3, 1);
 // high peak
 high_peak_boost.slider_parameter_linear_(7, slider_high_peak_boost, 0, 0, 10, 0.01);
 high_peak_bandwidth.slider_parameter_linear_(8, slider_high_peak_bandwidth, 5, 0, 10, 0.01);
-high_peak_frequency.slider_parameter_linear_(9, slider_high_peak_frequency, 1, 0, 6, 1);
+high_peak_frequency.slider_parameter_linear_(9, slider_high_peak_frequency, 0, 0, 6, 1);
 // high shelf
 high_shelf_atten.slider_parameter_linear_(11, slider_high_shelf_atten, 0, 0, 10, 0.01);
 high_shelf_frequency.slider_parameter_linear_(12, slider_high_shelf_frequency, 2, 0, 2, 1);
 // power
 eq_power.slider_parameter_linear_(14, slider_eq_power, 1, 0, 1, 1);
+// trim
+trim.slider_parameter_linear_(16, slider_trim, 0, -18, 18, 0.01);
 
 // DC blocker
 input_dc_blocker.hpf_coefficients_(5);
@@ -649,59 +694,64 @@ options.img_frame_(12, 0.05, 0, 40, 60, 1);
 // bypass
 eq_bypass.mouse_logic_();
 eq_bypass.mouse_button_switch_();
-eq_bypass.img_frame_(1, 1, 0, 145, 186, 2);
-slider_eq_bypass = eq_bypass.stepped_value_();
+eq_bypass.img_frame_(1, 1, 0, 143, 177, 2);
+slider_eq_bypass = eq_bypass.slider_value;
 // low shelf boost
 low_shelf_boost.mouse_logic_();
 low_shelf_boost.mouse_knob_();
-low_shelf_boost.img_frame_(2, 1, 0, 240, 40, 151);
+low_shelf_boost.img_frame_(2, 1, 0, 227, 53, 151);
 slider_low_shelf_boost = low_shelf_boost.stepped_value_();
 // low shelf atten
 low_shelf_atten.mouse_logic_();
 low_shelf_atten.mouse_knob_();
-low_shelf_atten.img_frame_(3, 1, 0, 458, 40, 151);
+low_shelf_atten.img_frame_(3, 1, 0, 440, 51, 151);
 slider_low_shelf_atten = low_shelf_atten.stepped_value_();
 // low shelf frequency
 low_shelf_frequency.mouse_logic_();
 low_shelf_frequency.mouse_knob_();
-low_shelf_frequency.img_frame_(4, 1, 0, 652, 133, 4);
+low_shelf_frequency.img_frame_(4, 1, 0, 636, 145, 4);
 slider_low_shelf_frequency = low_shelf_frequency.stepped_value_();
 // high peak frequency
 high_peak_frequency.mouse_logic_();
 high_peak_frequency.mouse_knob_();
-high_peak_frequency.img_frame_(5, 1, 0, 842, 130, 7);
+high_peak_frequency.img_frame_(5, 1, 0, 826, 141, 7);
 slider_high_peak_frequency = high_peak_frequency.stepped_value_();
 // high peak boost
 high_peak_boost.mouse_logic_();
 high_peak_boost.mouse_knob_();
-high_peak_boost.img_frame_(6, 1, 0, 1060, 40, 151);
+high_peak_boost.img_frame_(6, 1, 0, 1050, 55, 151);
 slider_high_peak_boost = high_peak_boost.stepped_value_();
 // high peak bandwidth
 high_peak_bandwidth.mouse_logic_();
 high_peak_bandwidth.mouse_knob_();
-high_peak_bandwidth.img_frame_(7, 1, 0, 1225, 213, 151);
+high_peak_bandwidth.img_frame_(7, 1, 0, 1218, 220, 151);
 slider_high_peak_bandwidth = high_peak_bandwidth.stepped_value_();
 // high shelf atten
 high_shelf_atten.mouse_logic_();
 high_shelf_atten.mouse_knob_();
-high_shelf_atten.img_frame_(8, 1, 0, 1308, 40, 151);
+high_shelf_atten.img_frame_(8, 1, 0, 1290, 56, 151);
 slider_high_shelf_atten = high_shelf_atten.stepped_value_();
 // high shelf frequency
 high_shelf_frequency.mouse_logic_();
 high_shelf_frequency.mouse_knob_();
-high_shelf_frequency.img_frame_(9, 1, 0, 1494, 147, 3);
+high_shelf_frequency.img_frame_(9, 1, 0, 1483, 165, 3);
 slider_high_shelf_frequency = high_shelf_frequency.stepped_value_();
 // power
 eq_power.mouse_logic_();
 eq_power.mouse_button_switch_();
-eq_power.img_frame_(10, 1, 0, 1633, 24, 2);
-eq_power.img_frame_(11, 1, 0, 1656, 182, 2);
-slider_eq_power = eq_power.stepped_value_();
+eq_power.img_frame_(10, 1, 0, 1624, 39, 2);
+eq_power.img_frame_(11, 1, 0, 1650, 199, 2);
+slider_eq_power = eq_power.slider_value;
+// trim
+trim.mouse_logic_();
+trim.mouse_knob_();
+trim.img_frame_(13, 1, 0, 248, 265, 151);
+slider_trim = trim.stepped_value_();
 
 // tooltp parameter
 _global.mawi_eq_p3b_show_tooltip == 0 ? (
   // bypass
-  eq_bypass.tooltip_(200, 160, 1, slider_eq_bypass ? "EQ: In" : "EQ: Out");
+  eq_bypass.tooltip_(200, 150, 1, slider_eq_bypass ? "EQ: In" : "EQ: Out");
   // low shelf
   low_shelf_boost.tooltip_(340, 255, 1, "Boost: %.2f");
   low_shelf_atten.tooltip_(555, 255, 1, "Atten: %.2f");
@@ -726,6 +776,8 @@ _global.mawi_eq_p3b_show_tooltip == 0 ? (
   slider_high_shelf_frequency == 1 ? "KCS: 10" : "KCS: 20");
   // power
   eq_power.tooltip_(1725, 160, 1, slider_eq_power ? "Power: On" : "Power: Off");
+  // trim
+  trim.tooltip_(300, 225, 1, "Trim: %.2f");
 );
 
 slider_change ? (
@@ -753,6 +805,8 @@ high_shelf_atten.slider_value = slider_high_shelf_atten;
 high_shelf_frequency.slider_value = slider_high_shelf_frequency;
 // power
 eq_power.slider_value = slider_eq_power;
+// trim
+trim.slider_value = slider_trim;
 
 update_sliders_();
 
@@ -773,12 +827,14 @@ sample_accurate_automation == 1 ? (
   high_shelf_frequency.automation_block_();
   // power
   eq_power.automation_block_();
+  // trim
+  trim.automation_block_();
 );
 
 @sample
 play_state >= _global.mawi_eq_p3b_auto_bypass_on_stop ? (
   sample_accurate_automation == 1 ? (
-    // Sample Process
+    // sample process
     // bypass
     eq_bypass.automation_sample_();
     // low shelf
@@ -794,6 +850,8 @@ play_state >= _global.mawi_eq_p3b_auto_bypass_on_stop ? (
     high_shelf_frequency.automation_sample_();
     // power
     eq_power.automation_sample_();
+    // trim
+    trim.automation_sample_();
     
     // slider update
     // bypass
@@ -811,14 +869,14 @@ play_state >= _global.mawi_eq_p3b_auto_bypass_on_stop ? (
     high_shelf_frequency.slider_sample_update_(slider_high_shelf_frequency);
     // power
     eq_power.slider_sample_update_(slider_eq_power);
+    // trim
+    trim.slider_sample_update_(slider_trim);
   );
   
   slider_eq_power == 1 ? (
     // input gain
     input_1 = input_dc_blocker.1.hpf_processing_(spl0);
     input_2 = input_dc_blocker.2.hpf_processing_(spl1);
-    input_1 *= gain.dB;
-    input_2 *= gain.dB;
     
     // EQ
     slider_eq_bypass == 1 ? (
@@ -834,8 +892,8 @@ play_state >= _global.mawi_eq_p3b_auto_bypass_on_stop ? (
         eq_output_1 += low_shelf_boost_output_1;
         eq_output_2 += low_shelf_boost_output_2;
       );
+      // low shelf atten
       slider_low_shelf_atten != 0 ? (
-        // low shelf atten
         low_shelf_atten_output_1 = low_shelf_atten_frequency.1.lpf_processing_(input_1);
         low_shelf_atten_output_2 = low_shelf_atten_frequency.2.lpf_processing_(input_2);
         low_shelf_atten_output_1 *= low_shelf_atten.dB;
@@ -843,14 +901,10 @@ play_state >= _global.mawi_eq_p3b_auto_bypass_on_stop ? (
         eq_output_1 -= low_shelf_atten_output_1;
         eq_output_2 -= low_shelf_atten_output_2;
       );
+      // high peak boost
       slider_high_peak_boost != 0 ? (
-        // high peak boost
-        high_peak_boost_output_1 = high_peak_boost_frequency.1.biquad_direct_(input_1);
-        high_peak_boost_output_2 = high_peak_boost_frequency.2.biquad_direct_(input_2);
-        high_peak_boost_output_1 *= high_peak_boost.dB;
-        high_peak_boost_output_2 *= high_peak_boost.dB;
-        eq_output_1 += high_peak_boost_output_1;
-        eq_output_2 += high_peak_boost_output_2;
+        eq_output_1 = high_peak_boost_frequency.1.peak_processing_(eq_output_1);
+        eq_output_2 = high_peak_boost_frequency.2.peak_processing_(eq_output_2);
       );
       // high shelf atten
       slider_high_shelf_atten != 0 ? (
@@ -861,6 +915,9 @@ play_state >= _global.mawi_eq_p3b_auto_bypass_on_stop ? (
         eq_output_1 -= high_shelf_atten_output_1;
         eq_output_2 -= high_shelf_atten_output_2;
       );
+      // trim
+      eq_output_1 *= trim.dB;
+      eq_output_2 *= trim.dB;
     ):(
       // bypassed EQ output
       eq_output_1 = input_1;
@@ -870,14 +927,14 @@ play_state >= _global.mawi_eq_p3b_auto_bypass_on_stop ? (
     // harmonics
     eq_output_1 > 0 ? (
       harmonics_output_1 = eq_output_1;
-      ):(
-      harmonics_output_1 = eq_output_1/(1 + abs(eq_output_1));
+    ):(
+      harmonics_output_1 = eq_output_1 / (1 + abs(eq_output_1));
     );
     
     eq_output_2 > 0 ? (
       harmonics_output_2 = eq_output_2;
-      ):(
-      harmonics_output_2 = eq_output_2/(1 + abs(eq_output_2));
+    ):(
+      harmonics_output_2 = eq_output_2 / (1 + abs(eq_output_2));
     );
     
     // output

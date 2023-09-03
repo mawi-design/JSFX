@@ -52,7 +52,6 @@ The highlight at a glance:
 Known issues:
  * Writing automations in touch mode does not work properly.
  * When sample accurate automation is on in EQ-P3B, buttons behave weird.
- * High RAM consumption when many instances are loaded. I hope REAPER will release the fix soon.
 
 I am very grateful for any solutions.
 
