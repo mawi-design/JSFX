@@ -21,7 +21,7 @@ The highlight at a glance:
 * no noise or harmonic distortion, ideal for mixing and mastering
 * attractive GUI, freely scalable
 * fully automatable with sample accurate automation
-* automatic bypass when playback stops 
+* automatic bypass when no signal or playback stops
 * open source code, i.e. modifiable
 * freeware, no annoying activation
 * JSFX is optimally integrated in REAPER
@@ -37,23 +37,21 @@ The EQ-P3B is modeled on a legendary passive equalizer developed in the 1950s. I
 
 The highlight at a glance:
 * analog hardware as model
+* digital filters without distortion (decramped filters)
 * simultaneous frequency boosts and cuts
 * vintage flair with rich and harmonically pleasing sound
 * low CPU, 0 latency, optimal for recording
 * no noise, ideal for mixing and mastering
 * attractive GUI, freely scalable
 * fully automatable with sample accurate automation
-* automatic bypass when playback stops 
+* automatic bypass when no signal or playback stops 
 * open source code, i.e. modifiable
 * freeware, no annoying activation
 * JSFX is optimally integrated in REAPER
 
 ---
 Known issues:
- * Writing automations in touch mode does not work properly.
- * When sample accurate automation is on in EQ-P3B, buttons behave weird.
-
-I am very grateful for any solutions.
+ * none
 
 **Thanks to** Tale, ErBird, Zeno, SaulT, Tukan_Studios, sai'ke, mrelwood, SonicAnomaly, geraintluff, BellesOndes, witti and all the great JSFX developers I forgot. Thanks also to all who helped me in the forum.
 
