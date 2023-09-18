@@ -1,13 +1,11 @@
 desc:mawi EQ-P3B
 /*
-version: 1.01
+version: 1.02
 changelog: 
-  * New GUI
-  * New trim knob
-  * New decramped filter
-  * Knobs rescaled
-  * Code tidied
-  * Manual updated
+  * NEW GUI
+  * NEW auto bypass detection
+  * FIXED odd button behavior when sample accurate automation is enabled
+  * FIXED writing touch and latch automation
 tags: EQ, Filter
 author: mawi
 copyright (C) 2023 and later mawi
@@ -24,13 +22,14 @@ about:
 
   The highlight at a glance:
   * analog hardware as model
+  * digital filters without distortion (decramped filters)
   * simultaneous frequency boosts and cuts
   * vintage flair with rich and harmonically pleasing sound
   * low CPU, 0 latency, optimal for recording
   * no noise, ideal for mixing and mastering
   * attractive GUI, freely scalable
   * fully automatable with sample accurate automation
-  * automatic bypass when playback stops 
+  * automatic bypass when no signal or playback stops
   * open source code, i.e. modifiable
   * freeware, no annoying activation
   * JSFX is optimally integrated in REAPER
@@ -68,6 +67,8 @@ file_var(0, sample_accurate_automation);
 file_var(0, _global.mawi_eq_p3b_auto_bypass_on_stop);
 
 @init
+ext_tail_size = -1;
+
 gfx_loadimg(0, "./img/background.png");
 gfx_loadimg(1, "./img/button_eq_in.png");
 gfx_loadimg(2, "./img/knob_low_boost.png");
@@ -243,7 +244,7 @@ instance(slider_value, slider_step)
 local()
 global()
 (
-  slider_step === 0 ? slider_value : floor(slider_value / slider_step + 0.000001) * slider_step;
+  slider_step === 0 ? slider_value : floor(slider_value / slider_step) * slider_step;
 );
 
 function slider_lin_scaled_to_normalized_()
@@ -266,7 +267,7 @@ global()
   slider_value = min(max(slider_value, slider_minimum), slider_maximum);
 );
 
-function img_frame_(file_id, scaling, rotation, pos_x, pos_y, frames)
+function image_(file_id, scaling, rotation, pos_x, pos_y, frames)
 instance(slider_value, slider_minimum, slider_maximum, img_scaling,
 img_rotation, img_pos_x, img_pos_y, img_width, img_height, slider_normalized)
 local(img_file_id, img_frames, img_frame, img_frame_pos_x, img_frame_pos_y)
@@ -295,10 +296,10 @@ global(gfx_x, gfx_y, gfx_a, gui_scale_factor, degrees)
   degrees, img_frame_pos_x, img_frame_pos_y, img_width, img_height);
 );
 
-function mouse_button_switch_()
+function button_logic_()
 instance(slider_index, slider_value, slider_default, slider_normalized,
-slider_minimum, slider_maximum,
-mouse_over, mouse_drag, mouse_click_left, slider_value_previous)
+slider_minimum, slider_maximum, touch_state,
+mouse_over, mouse_drag, mouse_click_left)
 local()
 global(current_cursor, slider_change)
 (
@@ -309,20 +310,24 @@ global(current_cursor, slider_change)
   mouse_click_left ? slider_value = !slider_value;
   slider_normalized = slider_value;
   
-  // update slider
-  slider_value_previous !== slider_value ? (
+  // slider automation
+  mouse_click_left == 1 ? (
     slider_change = 1;
-    slider_value_previous = slider_value;
-    slider_automate(slider(slider_index));
+    slider_automate(slider(slider_index), 0);
+    touch_state = 1;
+  ) : mouse_drag == 0 && touch_state == 1 ? (
+    slider_change = 1;
+    slider_automate(slider(slider_index), 1);
+    touch_state = 0;
   );
   
   slider_value;
 );
 
-function mouse_knob_()
+function knob_logic_()
 instance(slider_index, slider_value, slider_default,
-slider_minimum, slider_maximum,
-slider_value_previous, slider_normalized, slider_type,
+slider_minimum, slider_maximum, slider_value_previous, 
+slider_normalized, slider_type, touch_state, 
 mouse_over, mouse_drag, mouse_scroll, mouse_click_left,
 mouse_y_previous, mouse_wheel_previous, knob_resolution)
 local()
@@ -345,11 +350,15 @@ global(mouse_cap, mouse_wheel, mouse_y, slider_change, current_cursor)
   
   slider_type == "lin" ? this.slider_normalized_to_lin_scaled_();
   
-  // update slider
-  slider_value_previous !== slider_value ? (
+  // slider automation
+  mouse_drag == 1 ? (
     slider_change = 1;
-    slider_value_previous = slider_value;
-    slider_automate(slider(slider_index));
+    slider_automate(slider(slider_index), 0);
+    touch_state = 1;
+  ) : mouse_drag == 0 && touch_state == 1 ? (
+    slider_change = 1;
+    slider_automate(slider(slider_index), 1);
+    touch_state = 0;
   );
   
   slider_value;
@@ -499,11 +508,11 @@ function update_sliders_() (
 );
 
 function slider_sample_update_(value)
-instance(slider_value)
+instance(change_sample_position, slider_value)
 local()
 global()
 (
-  slider_value = value;
+  change_sample_position != -1 ? slider_value = value;
 );
 
 function automation_block_()
@@ -523,7 +532,7 @@ global()
 
 function automation_sample_()
 instance (slider_index, slider_value, number_of_samples_into_block, change_sample_position, slider_increment, target_slider_value)
-global()
+global(slider_change)
 (
   number_of_samples_into_block == change_sample_position ? 
   (
@@ -536,9 +545,10 @@ global()
   
   change_sample_position != -1 ? 
   (
-    slider(slider_index) += slider_increment; 
-    update_sliders_();
+    slider_change = 1;
+    slider(slider_index) += slider_increment;
     number_of_samples_into_block += 1;
+    update_sliders_();
   );
 );
 
@@ -681,7 +691,7 @@ trim.slider_parameter_linear_(16, slider_trim, 0, -18, 18, 0.01);
 input_dc_blocker.hpf_coefficients_(5);
 output_dc_blocker.hpf_coefficients_(5);
 
-@gfx 960 184
+@gfx 960 182
 background_color_(25, 26, 27);
 background_img_(0, 0);
 
@@ -690,77 +700,82 @@ current_cursor = 32512;
 // options
 options.mouse_logic_();
 options.menu_();
-options.img_frame_(12, 0.05, 0, 40, 60, 1);
+options.image_(12, 0.05, 0, 40, 60, 1);
 // bypass
 eq_bypass.mouse_logic_();
-eq_bypass.mouse_button_switch_();
-eq_bypass.img_frame_(1, 1, 0, 143, 177, 2);
-slider_eq_bypass = eq_bypass.slider_value;
+eq_bypass.button_logic_();
+eq_bypass.image_(1, 1, 0, 172, 187, 2);
 // low shelf boost
 low_shelf_boost.mouse_logic_();
-low_shelf_boost.mouse_knob_();
-low_shelf_boost.img_frame_(2, 1, 0, 227, 53, 151);
-slider_low_shelf_boost = low_shelf_boost.stepped_value_();
+low_shelf_boost.knob_logic_();
+low_shelf_boost.image_(2, 1, 0, 243, 37, 151);
 // low shelf atten
 low_shelf_atten.mouse_logic_();
-low_shelf_atten.mouse_knob_();
-low_shelf_atten.img_frame_(3, 1, 0, 440, 51, 151);
-slider_low_shelf_atten = low_shelf_atten.stepped_value_();
+low_shelf_atten.knob_logic_();
+low_shelf_atten.image_(3, 1, 0, 460, 37, 151);
 // low shelf frequency
 low_shelf_frequency.mouse_logic_();
-low_shelf_frequency.mouse_knob_();
-low_shelf_frequency.img_frame_(4, 1, 0, 636, 145, 4);
-slider_low_shelf_frequency = low_shelf_frequency.stepped_value_();
+low_shelf_frequency.knob_logic_();
+low_shelf_frequency.image_(4, 1, 0, 663, 132, 4);
 // high peak frequency
 high_peak_frequency.mouse_logic_();
-high_peak_frequency.mouse_knob_();
-high_peak_frequency.img_frame_(5, 1, 0, 826, 141, 7);
-slider_high_peak_frequency = high_peak_frequency.stepped_value_();
+high_peak_frequency.knob_logic_();
+high_peak_frequency.image_(5, 1, 0, 860, 130, 7);
 // high peak boost
 high_peak_boost.mouse_logic_();
-high_peak_boost.mouse_knob_();
-high_peak_boost.img_frame_(6, 1, 0, 1050, 55, 151);
-slider_high_peak_boost = high_peak_boost.stepped_value_();
+high_peak_boost.knob_logic_();
+high_peak_boost.image_(6, 1, 0, 1066, 39, 151);
 // high peak bandwidth
 high_peak_bandwidth.mouse_logic_();
-high_peak_bandwidth.mouse_knob_();
-high_peak_bandwidth.img_frame_(7, 1, 0, 1218, 220, 151);
-slider_high_peak_bandwidth = high_peak_bandwidth.stepped_value_();
+high_peak_bandwidth.knob_logic_();
+high_peak_bandwidth.image_(7, 1, 0, 1227, 211, 151);
 // high shelf atten
 high_shelf_atten.mouse_logic_();
-high_shelf_atten.mouse_knob_();
-high_shelf_atten.img_frame_(8, 1, 0, 1290, 56, 151);
-slider_high_shelf_atten = high_shelf_atten.stepped_value_();
+high_shelf_atten.knob_logic_();
+high_shelf_atten.image_(8, 1, 0, 1312, 38, 151);
 // high shelf frequency
 high_shelf_frequency.mouse_logic_();
-high_shelf_frequency.mouse_knob_();
-high_shelf_frequency.img_frame_(9, 1, 0, 1483, 165, 3);
-slider_high_shelf_frequency = high_shelf_frequency.stepped_value_();
+high_shelf_frequency.knob_logic_();
+high_shelf_frequency.image_(9, 1, 0, 1501, 144, 3);
 // power
 eq_power.mouse_logic_();
-eq_power.mouse_button_switch_();
-eq_power.img_frame_(10, 1, 0, 1624, 39, 2);
-eq_power.img_frame_(11, 1, 0, 1650, 199, 2);
-slider_eq_power = eq_power.slider_value;
+eq_power.button_logic_();
+eq_power.image_(10, 1, 0, 1645, 39, 2);
+eq_power.image_(11, 1, 0, 1667, 182, 2);
 // trim
 trim.mouse_logic_();
-trim.mouse_knob_();
-trim.img_frame_(13, 1, 0, 248, 265, 151);
-slider_trim = trim.stepped_value_();
+trim.knob_logic_();
+trim.image_(13, 1, 0, 256, 249, 151);
+
+slider_change ? (
+  slider_eq_bypass = eq_bypass.slider_value;
+  slider_low_shelf_boost = low_shelf_boost.stepped_value_();
+  slider_low_shelf_atten = low_shelf_atten.stepped_value_();
+  slider_low_shelf_frequency = low_shelf_frequency.stepped_value_();
+  slider_high_peak_frequency = high_peak_frequency.stepped_value_();
+  slider_high_peak_boost = high_peak_boost.stepped_value_();
+  slider_high_peak_bandwidth = high_peak_bandwidth.stepped_value_();
+  slider_high_shelf_atten = high_shelf_atten.stepped_value_();
+  slider_high_shelf_frequency = high_shelf_frequency.stepped_value_();
+  slider_eq_power = eq_power.slider_value;
+  slider_trim = trim.stepped_value_();
+  
+  update_sliders_();
+);
 
 // tooltp parameter
 _global.mawi_eq_p3b_show_tooltip == 0 ? (
   // bypass
-  eq_bypass.tooltip_(200, 150, 1, slider_eq_bypass ? "EQ: In" : "EQ: Out");
+  eq_bypass.tooltip_(212, 150, 1, slider_eq_bypass ? "EQ: In" : "EQ: Out");
   // low shelf
-  low_shelf_boost.tooltip_(340, 255, 1, "Boost: %.2f");
+  low_shelf_boost.tooltip_(343, 255, 1, "Boost: %.2f");
   low_shelf_atten.tooltip_(555, 255, 1, "Atten: %.2f");
   low_shelf_frequency.tooltip_(752, 75, 1, 
   slider_low_shelf_frequency == 0 ? "CPS: 20" : 
   slider_low_shelf_frequency == 1 ? "CPS: 30" : 
   slider_low_shelf_frequency == 2 ? "CPS: 60" : "CPS: 100");
   // high peak
-  high_peak_boost.tooltip_(1160, 255, 1, "Boost: %.2f");
+  high_peak_boost.tooltip_(1166, 255, 1, "Boost: %.2f");
   high_peak_bandwidth.tooltip_(1290, 190, 1, "Bandwidth: %.2f");
   high_peak_frequency.tooltip_(965, 75, 1, 
   slider_high_peak_frequency == 0 ? "KCS: 3": 
@@ -770,19 +785,14 @@ _global.mawi_eq_p3b_show_tooltip == 0 ? (
   slider_high_peak_frequency == 4 ? "KCS: 10" : 
   slider_high_peak_frequency == 5 ? "KCS: 12" : "KCS: 16");
   // high shelf
-  high_shelf_atten.tooltip_(1410, 255, 1, "Atten: %.2f");
+  high_shelf_atten.tooltip_(1411, 255, 1, "Atten: %.2f");
   high_shelf_frequency.tooltip_(1570, 95, 1, 
   slider_high_shelf_frequency == 0 ? "KCS: 5" : 
   slider_high_shelf_frequency == 1 ? "KCS: 10" : "KCS: 20");
   // power
   eq_power.tooltip_(1725, 160, 1, slider_eq_power ? "Power: On" : "Power: Off");
   // trim
-  trim.tooltip_(300, 225, 1, "Trim: %.2f");
-);
-
-slider_change ? (
-  update_sliders_();
-  slider_change = 0;
+  trim.tooltip_(300, 225, 1, "Trim: %.2f dB");
 );
 
 resize_icon_(15);
@@ -854,23 +864,26 @@ play_state >= _global.mawi_eq_p3b_auto_bypass_on_stop ? (
     trim.automation_sample_();
     
     // slider update
-    // bypass
-    eq_bypass.slider_sample_update_(slider_eq_bypass);
-    // low shelf
-    low_shelf_boost.slider_sample_update_(slider_low_shelf_boost);
-    low_shelf_atten.slider_sample_update_(slider_low_shelf_atten);
-    low_shelf_frequency.slider_sample_update_(slider_low_shelf_frequency);
-    // high peak
-    high_peak_boost.slider_sample_update_(slider_high_peak_boost);
-    high_peak_bandwidth.slider_sample_update_(slider_high_peak_bandwidth);
-    high_peak_frequency.slider_sample_update_(slider_high_peak_frequency);
-    // high shelf
-    high_shelf_atten.slider_sample_update_(slider_high_shelf_atten);
-    high_shelf_frequency.slider_sample_update_(slider_high_shelf_frequency);
-    // power
-    eq_power.slider_sample_update_(slider_eq_power);
-    // trim
-    trim.slider_sample_update_(slider_trim);
+    slider_change ? (
+      // bypass
+      eq_bypass.slider_sample_update_(slider_eq_bypass);
+      // low shelf
+      low_shelf_boost.slider_sample_update_(slider_low_shelf_boost);
+      low_shelf_atten.slider_sample_update_(slider_low_shelf_atten);
+      low_shelf_frequency.slider_sample_update_(slider_low_shelf_frequency);
+      // high peak
+      high_peak_boost.slider_sample_update_(slider_high_peak_boost);
+      high_peak_bandwidth.slider_sample_update_(slider_high_peak_bandwidth);
+      high_peak_frequency.slider_sample_update_(slider_high_peak_frequency);
+      // high shelf
+      high_shelf_atten.slider_sample_update_(slider_high_shelf_atten);
+      high_shelf_frequency.slider_sample_update_(slider_high_shelf_frequency);
+      // power
+      eq_power.slider_sample_update_(slider_eq_power);
+      // trim
+      trim.slider_sample_update_(slider_trim);
+      //slider_change = 0;
+    );
   );
   
   slider_eq_power == 1 ? (
