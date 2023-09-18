@@ -351,9 +351,8 @@ global(mouse_cap, mouse_wheel, mouse_y, slider_change, current_cursor)
   slider_type == "lin" ? this.slider_normalized_to_lin_scaled_();
   
   // slider automation
-  slider_value_previous !== slider_value && mouse_drag == 1 ? (
+  mouse_drag == 1 ? (
     slider_change = 1;
-    slider_value_previous = slider_value;
     slider_automate(slider(slider_index), 0);
     touch_state = 1;
   ) : mouse_drag == 0 && touch_state == 1 ? (
@@ -547,9 +546,9 @@ global(slider_change)
   change_sample_position != -1 ? 
   (
     slider_change = 1;
-    update_sliders_();
     slider(slider_index) += slider_increment;
     number_of_samples_into_block += 1;
+    update_sliders_();
   );
 );
 
@@ -748,6 +747,22 @@ trim.mouse_logic_();
 trim.knob_logic_();
 trim.image_(13, 1, 0, 256, 249, 151);
 
+slider_change ? (
+  slider_eq_bypass = eq_bypass.slider_value;
+  slider_low_shelf_boost = low_shelf_boost.stepped_value_();
+  slider_low_shelf_atten = low_shelf_atten.stepped_value_();
+  slider_low_shelf_frequency = low_shelf_frequency.stepped_value_();
+  slider_high_peak_frequency = high_peak_frequency.stepped_value_();
+  slider_high_peak_boost = high_peak_boost.stepped_value_();
+  slider_high_peak_bandwidth = high_peak_bandwidth.stepped_value_();
+  slider_high_shelf_atten = high_shelf_atten.stepped_value_();
+  slider_high_shelf_frequency = high_shelf_frequency.stepped_value_();
+  slider_eq_power = eq_power.slider_value;
+  slider_trim = trim.stepped_value_();
+  
+  update_sliders_();
+);
+
 // tooltp parameter
 _global.mawi_eq_p3b_show_tooltip == 0 ? (
   // bypass
@@ -778,22 +793,6 @@ _global.mawi_eq_p3b_show_tooltip == 0 ? (
   eq_power.tooltip_(1725, 160, 1, slider_eq_power ? "Power: On" : "Power: Off");
   // trim
   trim.tooltip_(300, 225, 1, "Trim: %.2f dB");
-);
-
-slider_change ? (
-  update_sliders_();
-  slider_eq_bypass = eq_bypass.slider_value;
-  slider_low_shelf_boost = low_shelf_boost.stepped_value_();
-  slider_low_shelf_atten = low_shelf_atten.stepped_value_();
-  slider_low_shelf_frequency = low_shelf_frequency.stepped_value_();
-  slider_high_peak_frequency = high_peak_frequency.stepped_value_();
-  slider_high_peak_boost = high_peak_boost.stepped_value_();
-  slider_high_peak_bandwidth = high_peak_bandwidth.stepped_value_();
-  slider_high_shelf_atten = high_shelf_atten.stepped_value_();
-  slider_high_shelf_frequency = high_shelf_frequency.stepped_value_();
-  slider_eq_power = eq_power.slider_value;
-  slider_trim = trim.stepped_value_();
-  slider_change = 0;
 );
 
 resize_icon_(15);
