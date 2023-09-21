@@ -1,9 +1,8 @@
 desc:mawi EQ-A4k
 /*
-version: 1.03
+version: 1.04
 changelog: 
-  * added mouse wheel for writing automation
-  * Manual updated
+  * changed slider description
 tags: EQ, Filter
 author: mawi
 copyright (C) 2023 and later mawi
@@ -40,9 +39,9 @@ in_pin:EQ-A4k Input 2
 out_pin:EQ-A4k Output 1
 out_pin:EQ-A4k Output 2
 
-slider1:slider_eq_in=1<0,1,1{Out,In}>-EQ In/Out
+slider1:slider_eq_in=1<0,1,1{Out,In}>-EQ Out/In
 // slider2:
-slider3:slider_low_cut_slope=0<0,3,1{Off,6dB/oct,12dB/oct,18dB/oct}>-HPF Slope
+slider3:slider_low_cut_slope=0<0,3,1{Off,6 dB/oct,12 dB/oct,18 dB/oct}>-HPF Slope
 slider4:slider_low_cut_frequency=16<16,4000,0.01,:log=100>-HPF Freq (Hz)
 // slider5:
 slider6:slider_low_type=0<0,1,1{Shelf,Bell}>-LF Type
@@ -65,7 +64,7 @@ slider22:slider_high_gain=0<-18,18,0.01>-HF Gain (dB)
 slider23:slider_high_frequency=8000<1500,16000,0.01,:log=8000>-HF Freq (Hz)
 slider24:slider_high_q=1<3.5,0.35,0.01,:log=1>-HF Q
 // slider25:
-slider26:slider_high_cut_slope=0<0,3,1{Off,6dB/oct,12dB/oct,18dB/oct}>-LPF Slope
+slider26:slider_high_cut_slope=0<0,3,1{Off,6 dB/oct,12 dB/oct,18 dB/oct}>-LPF Slope
 slider27:slider_high_cut_frequency=16000<300,16000,0.01,:log=3000>-LPF Freq (Hz)
 // slider28:
 slider29:slider_phase_inv=0<0,1,1{Normal,Inverted}>-Phase

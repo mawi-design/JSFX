@@ -1,9 +1,9 @@
 desc:mawi EQ-P3B
 /*
-version: 1.03
+version: 1.04
 changelog: 
-  * added mouse wheel for writing automation
-  * Manual updated
+  * changed slider description
+  * changed high kcs and bandwidth
 tags: EQ, Filter
 author: mawi
 copyright (C) 2023 and later mawi
@@ -41,7 +41,7 @@ in_pin:EQ-P3B Input 2
 out_pin:EQ-P3B Output 1
 out_pin:EQ-P3B Output 2
 
-slider1:slider_eq_bypass=1<0,1,1{Out,In}>-EQ In
+slider1:slider_eq_bypass=1<0,1,1{Out,In}>-EQ Out/In
 //slider2:
 slider3:slider_low_shelf_boost=0<0,10,0.01>-Lo Boost
 slider4:slider_low_shelf_atten=0<0,10,0.01>-Lo Atten
@@ -479,18 +479,52 @@ function update_sliders_() (
   //// slider midpoint offset
   midpoint_high_peak_boost = (2 - 0) / (10 - 0);
   base_high_peak_boost = ((midpoint_high_peak_boost - 1) / midpoint_high_peak_boost)^2;
-  
   high_peak_boost.slider_log_scaled = (10 - 0) * ((base_high_peak_boost^(slider_high_peak_boost * 0.1) -1)/(base_high_peak_boost - 1)) + 0;
   high_peak_boost_value = high_peak_boost.slider_log_scaled * 0.1 * (18 - 0) + 0;
   high_peak_boost_value = min(max(high_peak_boost_value, 0), 18);
-  high_peak_bandwidth = (slider_high_peak_bandwidth * 0.1 - 1.5) / (0.5 - 1.5);
-  slider_high_peak_frequency == 0 ? high_peak_boost_frequency = 3000;
-  slider_high_peak_frequency == 1 ? high_peak_boost_frequency = 4000;
-  slider_high_peak_frequency == 2 ? high_peak_boost_frequency = 5000;
-  slider_high_peak_frequency == 3 ? high_peak_boost_frequency = 8000;
-  slider_high_peak_frequency == 4 ? high_peak_boost_frequency = 10000;
-  slider_high_peak_frequency == 5 ? high_peak_boost_frequency = 12000;
-  slider_high_peak_frequency == 6 ? high_peak_boost_frequency = 16000;
+  // 3 kcs
+  slider_high_peak_frequency == 0 ? (
+    high_peak_boost_frequency = 3200;
+    high_peak_bandwidth_minimum = 0.5;
+    high_peak_bandwidth_maximum = 2.5;
+  );
+  // 4 kcs
+  slider_high_peak_frequency == 1 ? (
+    high_peak_boost_frequency = 4300;
+    high_peak_bandwidth_minimum = 0.1;
+    high_peak_bandwidth_maximum = 2.0;
+  );
+  // 5 kcs
+  slider_high_peak_frequency == 2 ? (
+    high_peak_boost_frequency = 5300;
+    high_peak_bandwidth_minimum = 0.9;
+    high_peak_bandwidth_maximum = 2.9;
+  );
+  // 8 kcs
+  slider_high_peak_frequency == 3 ? (
+    high_peak_boost_frequency = 8250;
+    high_peak_bandwidth_minimum = 0.5;
+    high_peak_bandwidth_maximum = 2.9;
+  );
+  // 10 kcs
+  slider_high_peak_frequency == 4 ? (
+    high_peak_boost_frequency = 10250;
+    high_peak_bandwidth_minimum = 0.01;
+    high_peak_bandwidth_maximum = 2.5;
+  );
+  // 12 kcs
+  slider_high_peak_frequency == 5 ? (
+    high_peak_boost_frequency = 12300;
+    high_peak_bandwidth_minimum = 0.6;
+    high_peak_bandwidth_maximum = 2.3;
+  );
+  // 16 kcs
+  slider_high_peak_frequency == 6 ? (
+    high_peak_boost_frequency = 16000;
+    high_peak_bandwidth_minimum = 1.4;
+    high_peak_bandwidth_maximum = 2.0;
+  );
+  high_peak_bandwidth = (slider_high_peak_bandwidth * 0.1 - high_peak_bandwidth_maximum) / (high_peak_bandwidth_minimum - high_peak_bandwidth_maximum);
   high_peak_boost_frequency.peak_coefficients_(high_peak_boost_frequency, high_peak_boost_value, high_peak_bandwidth);
   
   // high shelf atten
