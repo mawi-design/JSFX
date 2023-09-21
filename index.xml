@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<index version="1" name="mawi JSFX" commit="911f6bf73856640b4ed4082dd2b25369b1d0f071">
+<index version="1" name="mawi JSFX" commit="e61e86b86cbe4b6ed99bdbd4b646ce54b3dc2b8d">
   <category name="EQ-A4k">
     <reapack name="mawi_EQ-A4k.jsfx" type="effect" desc="mawi EQ-A4k">
       <metadata>
@@ -127,6 +127,38 @@
         <source file="img/poti_trim.png">https://github.com/mawi-design/JSFX/raw/911f6bf73856640b4ed4082dd2b25369b1d0f071/EQ-A4k/img/poti_trim.png</source>
         <source file="mawi_EQ-A4k_Manual.pdf">https://github.com/mawi-design/JSFX/raw/911f6bf73856640b4ed4082dd2b25369b1d0f071/EQ-A4k/mawi_EQ-A4k_Manual.pdf</source>
       </version>
+      <version name="1.04" author="mawi" time="2023-09-21T14:27:58Z">
+        <changelog><![CDATA[* changed slider description]]></changelog>
+        <source>https://github.com/mawi-design/JSFX/raw/e61e86b86cbe4b6ed99bdbd4b646ce54b3dc2b8d/EQ-A4k/mawi_EQ-A4k.jsfx</source>
+        <source file="img/background.png">https://github.com/mawi-design/JSFX/raw/e61e86b86cbe4b6ed99bdbd4b646ce54b3dc2b8d/EQ-A4k/img/background.png</source>
+        <source file="img/button_bypass.png">https://github.com/mawi-design/JSFX/raw/e61e86b86cbe4b6ed99bdbd4b646ce54b3dc2b8d/EQ-A4k/img/button_bypass.png</source>
+        <source file="img/button_high_type.png">https://github.com/mawi-design/JSFX/raw/e61e86b86cbe4b6ed99bdbd4b646ce54b3dc2b8d/EQ-A4k/img/button_high_type.png</source>
+        <source file="img/button_hpf1.png">https://github.com/mawi-design/JSFX/raw/e61e86b86cbe4b6ed99bdbd4b646ce54b3dc2b8d/EQ-A4k/img/button_hpf1.png</source>
+        <source file="img/button_hpf2.png">https://github.com/mawi-design/JSFX/raw/e61e86b86cbe4b6ed99bdbd4b646ce54b3dc2b8d/EQ-A4k/img/button_hpf2.png</source>
+        <source file="img/button_hpf3.png">https://github.com/mawi-design/JSFX/raw/e61e86b86cbe4b6ed99bdbd4b646ce54b3dc2b8d/EQ-A4k/img/button_hpf3.png</source>
+        <source file="img/button_low_type.png">https://github.com/mawi-design/JSFX/raw/e61e86b86cbe4b6ed99bdbd4b646ce54b3dc2b8d/EQ-A4k/img/button_low_type.png</source>
+        <source file="img/button_lpf1.png">https://github.com/mawi-design/JSFX/raw/e61e86b86cbe4b6ed99bdbd4b646ce54b3dc2b8d/EQ-A4k/img/button_lpf1.png</source>
+        <source file="img/button_lpf2.png">https://github.com/mawi-design/JSFX/raw/e61e86b86cbe4b6ed99bdbd4b646ce54b3dc2b8d/EQ-A4k/img/button_lpf2.png</source>
+        <source file="img/button_lpf3.png">https://github.com/mawi-design/JSFX/raw/e61e86b86cbe4b6ed99bdbd4b646ce54b3dc2b8d/EQ-A4k/img/button_lpf3.png</source>
+        <source file="img/button_phase.png">https://github.com/mawi-design/JSFX/raw/e61e86b86cbe4b6ed99bdbd4b646ce54b3dc2b8d/EQ-A4k/img/button_phase.png</source>
+        <source file="img/menu.png">https://github.com/mawi-design/JSFX/raw/e61e86b86cbe4b6ed99bdbd4b646ce54b3dc2b8d/EQ-A4k/img/menu.png</source>
+        <source file="img/poti_high_freq.png">https://github.com/mawi-design/JSFX/raw/e61e86b86cbe4b6ed99bdbd4b646ce54b3dc2b8d/EQ-A4k/img/poti_high_freq.png</source>
+        <source file="img/poti_high_gain.png">https://github.com/mawi-design/JSFX/raw/e61e86b86cbe4b6ed99bdbd4b646ce54b3dc2b8d/EQ-A4k/img/poti_high_gain.png</source>
+        <source file="img/poti_high_mid_freq.png">https://github.com/mawi-design/JSFX/raw/e61e86b86cbe4b6ed99bdbd4b646ce54b3dc2b8d/EQ-A4k/img/poti_high_mid_freq.png</source>
+        <source file="img/poti_high_mid_gain.png">https://github.com/mawi-design/JSFX/raw/e61e86b86cbe4b6ed99bdbd4b646ce54b3dc2b8d/EQ-A4k/img/poti_high_mid_gain.png</source>
+        <source file="img/poti_high_mid_q.png">https://github.com/mawi-design/JSFX/raw/e61e86b86cbe4b6ed99bdbd4b646ce54b3dc2b8d/EQ-A4k/img/poti_high_mid_q.png</source>
+        <source file="img/poti_high_q.png">https://github.com/mawi-design/JSFX/raw/e61e86b86cbe4b6ed99bdbd4b646ce54b3dc2b8d/EQ-A4k/img/poti_high_q.png</source>
+        <source file="img/poti_hpf.png">https://github.com/mawi-design/JSFX/raw/e61e86b86cbe4b6ed99bdbd4b646ce54b3dc2b8d/EQ-A4k/img/poti_hpf.png</source>
+        <source file="img/poti_low_freq.png">https://github.com/mawi-design/JSFX/raw/e61e86b86cbe4b6ed99bdbd4b646ce54b3dc2b8d/EQ-A4k/img/poti_low_freq.png</source>
+        <source file="img/poti_low_gain.png">https://github.com/mawi-design/JSFX/raw/e61e86b86cbe4b6ed99bdbd4b646ce54b3dc2b8d/EQ-A4k/img/poti_low_gain.png</source>
+        <source file="img/poti_low_mid_freq.png">https://github.com/mawi-design/JSFX/raw/e61e86b86cbe4b6ed99bdbd4b646ce54b3dc2b8d/EQ-A4k/img/poti_low_mid_freq.png</source>
+        <source file="img/poti_low_mid_gain.png">https://github.com/mawi-design/JSFX/raw/e61e86b86cbe4b6ed99bdbd4b646ce54b3dc2b8d/EQ-A4k/img/poti_low_mid_gain.png</source>
+        <source file="img/poti_low_mid_q.png">https://github.com/mawi-design/JSFX/raw/e61e86b86cbe4b6ed99bdbd4b646ce54b3dc2b8d/EQ-A4k/img/poti_low_mid_q.png</source>
+        <source file="img/poti_low_q.png">https://github.com/mawi-design/JSFX/raw/e61e86b86cbe4b6ed99bdbd4b646ce54b3dc2b8d/EQ-A4k/img/poti_low_q.png</source>
+        <source file="img/poti_lpf.png">https://github.com/mawi-design/JSFX/raw/e61e86b86cbe4b6ed99bdbd4b646ce54b3dc2b8d/EQ-A4k/img/poti_lpf.png</source>
+        <source file="img/poti_trim.png">https://github.com/mawi-design/JSFX/raw/e61e86b86cbe4b6ed99bdbd4b646ce54b3dc2b8d/EQ-A4k/img/poti_trim.png</source>
+        <source file="mawi_EQ-A4k_Manual.pdf">https://github.com/mawi-design/JSFX/raw/e61e86b86cbe4b6ed99bdbd4b646ce54b3dc2b8d/EQ-A4k/mawi_EQ-A4k_Manual.pdf</source>
+      </version>
     </reapack>
   </category>
   <category name="EQ-P3B">
@@ -240,6 +272,26 @@
         <source file="img/lamp_eq_on.png">https://github.com/mawi-design/JSFX/raw/911f6bf73856640b4ed4082dd2b25369b1d0f071/EQ-P3B/img/lamp_eq_on.png</source>
         <source file="img/menu.png">https://github.com/mawi-design/JSFX/raw/911f6bf73856640b4ed4082dd2b25369b1d0f071/EQ-P3B/img/menu.png</source>
         <source file="mawi_EQ-P3B_Manual.pdf">https://github.com/mawi-design/JSFX/raw/911f6bf73856640b4ed4082dd2b25369b1d0f071/EQ-P3B/mawi_EQ-P3B_Manual.pdf</source>
+      </version>
+      <version name="1.04" author="mawi" time="2023-09-21T14:27:58Z">
+        <changelog><![CDATA[* changed slider description
+* changed high kcs and bandwidth]]></changelog>
+        <source>https://github.com/mawi-design/JSFX/raw/e61e86b86cbe4b6ed99bdbd4b646ce54b3dc2b8d/EQ-P3B/mawi_EQ-P3B.jsfx</source>
+        <source file="img/background.png">https://github.com/mawi-design/JSFX/raw/e61e86b86cbe4b6ed99bdbd4b646ce54b3dc2b8d/EQ-P3B/img/background.png</source>
+        <source file="img/button_eq_in.png">https://github.com/mawi-design/JSFX/raw/e61e86b86cbe4b6ed99bdbd4b646ce54b3dc2b8d/EQ-P3B/img/button_eq_in.png</source>
+        <source file="img/knob_eq_on.png">https://github.com/mawi-design/JSFX/raw/e61e86b86cbe4b6ed99bdbd4b646ce54b3dc2b8d/EQ-P3B/img/knob_eq_on.png</source>
+        <source file="img/knob_high_atten.png">https://github.com/mawi-design/JSFX/raw/e61e86b86cbe4b6ed99bdbd4b646ce54b3dc2b8d/EQ-P3B/img/knob_high_atten.png</source>
+        <source file="img/knob_high_atten_kcs.png">https://github.com/mawi-design/JSFX/raw/e61e86b86cbe4b6ed99bdbd4b646ce54b3dc2b8d/EQ-P3B/img/knob_high_atten_kcs.png</source>
+        <source file="img/knob_high_boost.png">https://github.com/mawi-design/JSFX/raw/e61e86b86cbe4b6ed99bdbd4b646ce54b3dc2b8d/EQ-P3B/img/knob_high_boost.png</source>
+        <source file="img/knob_high_boost_bandwidth.png">https://github.com/mawi-design/JSFX/raw/e61e86b86cbe4b6ed99bdbd4b646ce54b3dc2b8d/EQ-P3B/img/knob_high_boost_bandwidth.png</source>
+        <source file="img/knob_high_boost_kcs.png">https://github.com/mawi-design/JSFX/raw/e61e86b86cbe4b6ed99bdbd4b646ce54b3dc2b8d/EQ-P3B/img/knob_high_boost_kcs.png</source>
+        <source file="img/knob_low_atten.png">https://github.com/mawi-design/JSFX/raw/e61e86b86cbe4b6ed99bdbd4b646ce54b3dc2b8d/EQ-P3B/img/knob_low_atten.png</source>
+        <source file="img/knob_low_boost.png">https://github.com/mawi-design/JSFX/raw/e61e86b86cbe4b6ed99bdbd4b646ce54b3dc2b8d/EQ-P3B/img/knob_low_boost.png</source>
+        <source file="img/knob_low_cps.png">https://github.com/mawi-design/JSFX/raw/e61e86b86cbe4b6ed99bdbd4b646ce54b3dc2b8d/EQ-P3B/img/knob_low_cps.png</source>
+        <source file="img/knob_trim.png">https://github.com/mawi-design/JSFX/raw/e61e86b86cbe4b6ed99bdbd4b646ce54b3dc2b8d/EQ-P3B/img/knob_trim.png</source>
+        <source file="img/lamp_eq_on.png">https://github.com/mawi-design/JSFX/raw/e61e86b86cbe4b6ed99bdbd4b646ce54b3dc2b8d/EQ-P3B/img/lamp_eq_on.png</source>
+        <source file="img/menu.png">https://github.com/mawi-design/JSFX/raw/e61e86b86cbe4b6ed99bdbd4b646ce54b3dc2b8d/EQ-P3B/img/menu.png</source>
+        <source file="mawi_EQ-P3B_Manual.pdf">https://github.com/mawi-design/JSFX/raw/e61e86b86cbe4b6ed99bdbd4b646ce54b3dc2b8d/EQ-P3B/mawi_EQ-P3B_Manual.pdf</source>
       </version>
     </reapack>
   </category>
