@@ -1,9 +1,8 @@
 desc:mawi EQ-P3B
 /*
-version: 1.04
+version: 1.05
 changelog: 
-  * changed slider description
-  * changed high kcs and bandwidth
+  * code improved
 tags: EQ, Filter
 author: mawi
 copyright (C) 2023 and later mawi
@@ -357,7 +356,7 @@ instance(slider_index, slider_value, slider_default, slider_normalized,
 slider_minimum, slider_maximum, touch_state,
 mouse_over, mouse_drag, mouse_click_left)
 local()
-global(current_cursor, slider_change)
+global(current_cursor)
 (
   // mouse parameter
   mouse_over || mouse_drag ? current_cursor = 32649;
@@ -367,12 +366,10 @@ global(current_cursor, slider_change)
   slider_normalized = slider_value;
   
   // slider automation
-  mouse_click_left == 1 ? (
-    slider_change = 1;
+  mouse_click_left ? (
     slider_automate(slider(slider_index), 0);
     touch_state = 1;
-  ) : mouse_drag == 0 && touch_state == 1 ? (
-    slider_change = 1;
+  ) : !mouse_drag && touch_state == 1 ? (
     slider_automate(slider(slider_index), 1);
     touch_state = 0;
   );
@@ -387,7 +384,7 @@ slider_normalized, slider_type, touch_state,
 mouse_over, mouse_drag, mouse_scroll, mouse_click_left,
 mouse_y_previous, mouse_wheel_previous, knob_resolution)
 local()
-global(mouse_cap, mouse_wheel, mouse_y, slider_change, current_cursor)
+global(mouse_cap, mouse_wheel, mouse_y, current_cursor)
 (
   // knob parameter
   knob_resolution = 1/250;
@@ -408,11 +405,9 @@ global(mouse_cap, mouse_wheel, mouse_y, slider_change, current_cursor)
   
   // slider automation
   mouse_drag || mouse_scroll ? (
-    slider_change = 1;
     slider_automate(slider(slider_index), 0);
     touch_state = 1;
   ) : !mouse_drag || !mouse_scroll && touch_state == 1 ? (
-    slider_change = 1;
     slider_automate(slider(slider_index), 1);
     touch_state = 0;
   );
@@ -433,19 +428,21 @@ _global.mawi_eq_p3b_auto_bypass_on_stop)
   mouse_click_left ? (
     gfx_x = mouse_x;
     gfx_y = mouse_y;
-  
-    sprintf(#menustr,"%sShow tooltip|%sSample accurate automation (more CPU)|%sAuto bypass on stop (save CPU)|",
-            _global.mawi_eq_p3b_show_tooltip == 0 ? "!" : "", 
-            sample_accurate_automation == 1 ? "!" : "",
-            _global.mawi_eq_p3b_auto_bypass_on_stop == 1 ? "!" : "");
     
     menu = gfx_showmenu(#menustr);
-  
+    
     menu == 1 ? _global.mawi_eq_p3b_show_tooltip = !_global.mawi_eq_p3b_show_tooltip;
     menu == 2 ? sample_accurate_automation = !sample_accurate_automation;
     menu == 3 ? _global.mawi_eq_p3b_auto_bypass_on_stop = !_global.mawi_eq_p3b_auto_bypass_on_stop;
-    slider_automate(-1);
+    
+    // undo point
+    menu >= 1 ? sliderchange(-1);
   );
+  
+  sprintf(#menustr,"%sShow tooltip|%sSample accurate automation (more CPU)|%sAuto bypass on stop (save CPU)|",
+          _global.mawi_eq_p3b_show_tooltip == 0 ? "!" : "", 
+          sample_accurate_automation == 1 ? "!" : "",
+          _global.mawi_eq_p3b_auto_bypass_on_stop == 1 ? "!" : "");
 );
 
 function update_sliders_() (
@@ -541,14 +538,6 @@ function update_sliders_() (
   trim.dB_conversion_(slider_trim);
 );
 
-function slider_sample_update_(value)
-instance(change_sample_position, slider_value)
-local()
-global()
-(
-  change_sample_position != -1 ? slider_value = value;
-);
-
 function automation_block_()
 instance (slider_index, slider_value, number_of_samples_into_block, slider_increment, change_sample_position,
 target_slider_value)
@@ -565,7 +554,7 @@ global()
 
 function automation_sample_()
 instance (slider_index, slider_value, number_of_samples_into_block, change_sample_position, slider_increment, target_slider_value)
-global(slider_change)
+global()
 (
   number_of_samples_into_block == change_sample_position ? (
     change_sample_position = slider_next_chg(slider_index, target_slider_value);
@@ -575,10 +564,11 @@ global(slider_change)
   );
   
   change_sample_position != -1 ? (
-    slider_change = 1;
     slider(slider_index) += slider_increment;
-    number_of_samples_into_block += 1;
+    slider_value = slider(slider_index);
     update_sliders_();
+    
+    number_of_samples_into_block += 1;
   );
 );
 
@@ -735,63 +725,60 @@ options.image_(12, 0.05, 0, 40, 60, 1);
 eq_bypass.mouse_logic_();
 eq_bypass.button_logic_();
 eq_bypass.image_(1, 1, 0, 172, 187, 2);
+slider_eq_bypass = eq_bypass.slider_value;
 // low shelf boost
 low_shelf_boost.mouse_logic_();
 low_shelf_boost.knob_logic_();
 low_shelf_boost.image_(2, 1, 0, 243, 37, 151);
+slider_low_shelf_boost = low_shelf_boost.stepped_value_();
 // low shelf atten
 low_shelf_atten.mouse_logic_();
 low_shelf_atten.knob_logic_();
 low_shelf_atten.image_(3, 1, 0, 460, 37, 151);
+slider_low_shelf_atten = low_shelf_atten.stepped_value_();
 // low shelf frequency
 low_shelf_frequency.mouse_logic_();
 low_shelf_frequency.knob_logic_();
 low_shelf_frequency.image_(4, 1, 0, 663, 132, 4);
+slider_low_shelf_frequency = low_shelf_frequency.stepped_value_();
 // high peak frequency
 high_peak_frequency.mouse_logic_();
 high_peak_frequency.knob_logic_();
 high_peak_frequency.image_(5, 1, 0, 860, 130, 7);
+slider_high_peak_frequency = high_peak_frequency.stepped_value_();
 // high peak boost
 high_peak_boost.mouse_logic_();
 high_peak_boost.knob_logic_();
 high_peak_boost.image_(6, 1, 0, 1066, 39, 151);
+slider_high_peak_boost = high_peak_boost.stepped_value_();
 // high peak bandwidth
 high_peak_bandwidth.mouse_logic_();
 high_peak_bandwidth.knob_logic_();
 high_peak_bandwidth.image_(7, 1, 0, 1227, 211, 151);
+slider_high_peak_bandwidth = high_peak_bandwidth.stepped_value_();
 // high shelf atten
 high_shelf_atten.mouse_logic_();
 high_shelf_atten.knob_logic_();
 high_shelf_atten.image_(8, 1, 0, 1312, 38, 151);
+slider_high_shelf_atten = high_shelf_atten.stepped_value_();
 // high shelf frequency
 high_shelf_frequency.mouse_logic_();
 high_shelf_frequency.knob_logic_();
 high_shelf_frequency.image_(9, 1, 0, 1501, 144, 3);
+slider_high_shelf_frequency = high_shelf_frequency.stepped_value_();
 // power
 eq_power.mouse_logic_();
 eq_power.button_logic_();
 eq_power.image_(10, 1, 0, 1645, 39, 2);
 eq_power.image_(11, 1, 0, 1667, 182, 2);
+slider_eq_power = eq_power.slider_value;
 // trim
 trim.mouse_logic_();
 trim.knob_logic_();
 trim.image_(13, 1, 0, 256, 249, 151);
+slider_trim = trim.stepped_value_();
 
-slider_change ? (
-  slider_eq_bypass = eq_bypass.slider_value;
-  slider_low_shelf_boost = low_shelf_boost.stepped_value_();
-  slider_low_shelf_atten = low_shelf_atten.stepped_value_();
-  slider_low_shelf_frequency = low_shelf_frequency.stepped_value_();
-  slider_high_peak_frequency = high_peak_frequency.stepped_value_();
-  slider_high_peak_boost = high_peak_boost.stepped_value_();
-  slider_high_peak_bandwidth = high_peak_bandwidth.stepped_value_();
-  slider_high_shelf_atten = high_shelf_atten.stepped_value_();
-  slider_high_shelf_frequency = high_shelf_frequency.stepped_value_();
-  slider_eq_power = eq_power.slider_value;
-  slider_trim = trim.stepped_value_();
-  
-  update_sliders_();
-);
+update_sliders_();
 
 // tooltp parameter
 _global.mawi_eq_p3b_show_tooltip == 0 ? (
@@ -874,7 +861,6 @@ sample_accurate_automation == 1 ? (
 @sample
 play_state >= _global.mawi_eq_p3b_auto_bypass_on_stop ? (
   sample_accurate_automation == 1 ? (
-    // sample process
     // bypass
     eq_bypass.automation_sample_();
     // low shelf
@@ -892,28 +878,6 @@ play_state >= _global.mawi_eq_p3b_auto_bypass_on_stop ? (
     eq_power.automation_sample_();
     // trim
     trim.automation_sample_();
-    
-    // slider update
-    slider_change ? (
-      // bypass
-      eq_bypass.slider_sample_update_(slider_eq_bypass);
-      // low shelf
-      low_shelf_boost.slider_sample_update_(slider_low_shelf_boost);
-      low_shelf_atten.slider_sample_update_(slider_low_shelf_atten);
-      low_shelf_frequency.slider_sample_update_(slider_low_shelf_frequency);
-      // high peak
-      high_peak_boost.slider_sample_update_(slider_high_peak_boost);
-      high_peak_bandwidth.slider_sample_update_(slider_high_peak_bandwidth);
-      high_peak_frequency.slider_sample_update_(slider_high_peak_frequency);
-      // high shelf
-      high_shelf_atten.slider_sample_update_(slider_high_shelf_atten);
-      high_shelf_frequency.slider_sample_update_(slider_high_shelf_frequency);
-      // power
-      eq_power.slider_sample_update_(slider_eq_power);
-      // trim
-      trim.slider_sample_update_(slider_trim);
-      //slider_change = 0;
-    );
   );
   
   slider_eq_power == 1 ? (
