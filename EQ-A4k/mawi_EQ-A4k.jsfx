@@ -1,8 +1,8 @@
 desc:mawi EQ-A4k
 /*
-version: 1.06
+version: 1.07
 changelog: 
-  * hidpi/retina support
+  * Code tidied
 tags: EQ, Filter
 author: mawi
 copyright (C) 2023 and later mawi
@@ -136,8 +136,8 @@ local()
 global(gfx_ext_retina, gfx_ext_flags, gfx_w, gfx_h, gui_scale_factor)
 (
   gfx_ext_flags == 0 ? (
-    gfx_set(1, 1, 1, 0.3);
     icon_size *= gfx_ext_retina;
+    gfx_set(1, 1, 1, 0.3);
     gfx_triangle(gfx_w, gfx_h, gfx_w, gfx_h - icon_size, gfx_w - icon_size, gfx_h);
   );
 );
@@ -456,7 +456,7 @@ gui_scale_factor, #tooltip, time_current)
   
   !mouse_over && !mouse_drag ? tooltip_timer = tooltip = 0;
   
-  tooltip > 0 ? (
+  tooltip == 1 ? (
     tooltip_fade_alpha < 1 ? tooltip_fade_alpha += 0.2;
     tooltip_fade_alpha = min(tooltip_fade_alpha, 1);
   ):(
@@ -1204,7 +1204,7 @@ sample_accurate_automation == 1 ? (
 );
 
 @sample
-play_state >= _global.mawi_eq_a4k_auto_bypass_on_stop ? (
+_global.mawi_eq_a4k_auto_bypass_on_stop == 0 || play_state != 0 ? (
   sample_accurate_automation == 1 ? (
     // EQ In
     eq_in.automation_sample_();

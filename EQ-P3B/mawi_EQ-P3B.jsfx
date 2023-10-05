@@ -1,8 +1,9 @@
 desc:mawi EQ-P3B
 /*
-version: 1.06
+version: 1.07
 changelog: 
-  * hidpi/retina support
+  * LPF changed
+  * Code tidied
 tags: EQ, Filter
 author: mawi
 copyright (C) 2023 and later mawi
@@ -111,8 +112,8 @@ local()
 global(gfx_ext_retina, gfx_ext_flags, gfx_w, gfx_h, gui_scale_factor)
 (
   gfx_ext_flags == 0 ? (
-    gfx_set(1, 1, 1, 0.5);
     icon_size *= gfx_ext_retina;
+    gfx_set(1, 1, 1, 0.5);
     gfx_triangle(gfx_w, gfx_h, gfx_w, gfx_h - icon_size, gfx_w - icon_size, gfx_h);
   );
 );
@@ -181,19 +182,22 @@ global()
 
 // lowpass
 function lpf_coefficients_(slider_frequency)
-instance(a)
-local(omega_0, cos_omega_0)
+instance(g, G_LP)
+local()
 global(srate)
 (
-  omega_0 = 2 * $pi * slider_frequency / srate;
-  cos_omega_0 = cos(omega_0) - 2;
-  a = sqrt(sqr(cos_omega_0) - 1) + cos_omega_0 + 1;
+  g = tan($pi * slider_frequency / srate);
+  G_LP = g / (1 + g);
 );
 
 function lpf_processing_(input)
-instance(output, a)
+instance(output, x_1, v_1, G_LP)
 (
-  output += this..a * (input - output);
+  v_1 = this..G_LP * (input - x_1);
+  output = v_1 + x_1;
+  x_1 = output + v_1;
+  
+  output;
 );
 
 // highpass
@@ -676,7 +680,7 @@ gui_scale_factor, #tooltip, time_current)
   
   !mouse_over && !mouse_drag ? tooltip_timer = tooltip = 0;
   
-  tooltip > 0 ? (
+  tooltip == 1 ? (
     tooltip_fade_alpha < 1 ? tooltip_fade_alpha += 0.2;
     tooltip_fade_alpha = min(tooltip_fade_alpha, 1);
   ):(
@@ -860,7 +864,7 @@ sample_accurate_automation == 1 ? (
 );
 
 @sample
-play_state >= _global.mawi_eq_p3b_auto_bypass_on_stop ? (
+_global.mawi_eq_p3b_auto_bypass_on_stop == 0 || play_state != 0 ? (
   sample_accurate_automation == 1 ? (
     // bypass
     eq_bypass.automation_sample_();
