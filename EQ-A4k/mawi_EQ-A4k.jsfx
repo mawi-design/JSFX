@@ -1,8 +1,8 @@
 desc:mawi EQ-A4k
 /*
-version: 1.07
+version: 1.08
 changelog: 
-  * Code tidied
+  * added filter clearing
 tags: EQ, Filter
 author: mawi
 copyright (C) 2023 and later mawi
@@ -306,6 +306,22 @@ global()
   w_1 = w_0;
 );
 
+function second_order_filter_sample_clearing_()
+instance(a1, a2, b0, b1, b2, v_0, v_1, v_2, w_0, w_1, w_2, output)
+local()
+global()
+(
+  v_0 = 0;
+  w_0 = 0;
+  
+  output = 0;
+  
+  v_2 = 0;
+  w_2 = 0;
+  v_1 = 0;
+  w_1 = 0;
+);
+
 function first_order_hpf_coefficients_(slider_frequency)
 instance(a0, a1, b1)
 local()
@@ -327,6 +343,17 @@ global()
   output;
 );
 
+function first_order_hpf_sample_clearing_()
+instance(a0, a1, b1, x_1, output)
+local()
+global()
+(
+  output = 0;
+  x_1 = 0;
+  
+  output;
+);
+
 function first_order_lpf_coefficients_(slider_frequency)
 instance(a)
 local(omega_0, cos_omega_0)
@@ -343,6 +370,14 @@ local()
 global()
 (
   output += this..a * (input - output);
+);
+
+function first_order_lpf_sample_clearing_()
+instance(a, output)
+local()
+global()
+(
+  output = 0;
 );
 
 function dB_conversion_(value)
@@ -470,13 +505,53 @@ gui_scale_factor, #tooltip, time_current)
 );
 
 function update_sliders_() (
+  // EQ Out/In ////////////////////////////////////////////////////////////////
+  slider_eq_in == 0 ? (
+    high_cut_1.1.first_order_lpf_sample_clearing_();
+    high_cut_1.2.first_order_lpf_sample_clearing_();
+    high_cut_2.1.second_order_filter_sample_clearing_();
+    high_cut_2.2.second_order_filter_sample_clearing_();
+    
+    low_cut_1.1.first_order_hpf_sample_clearing_();
+    low_cut_1.2.first_order_hpf_sample_clearing_();
+    low_cut_2.1.second_order_filter_sample_clearing_();
+    low_cut_2.2.second_order_filter_sample_clearing_();
+    
+    high_shelf.1.second_order_filter_sample_clearing_();
+    high_shelf.2.second_order_filter_sample_clearing_();
+    peak_1.1.second_order_filter_sample_clearing_();
+    peak_1.2.second_order_filter_sample_clearing_();
+    
+    peak_2.1.second_order_filter_sample_clearing_();
+    peak_2.2.second_order_filter_sample_clearing_();
+    
+    peak_3.1.second_order_filter_sample_clearing_();
+    peak_3.2.second_order_filter_sample_clearing_();
+    
+    low_shelf.1.second_order_filter_sample_clearing_();
+    low_shelf.2.second_order_filter_sample_clearing_();
+    peak_4.1.second_order_filter_sample_clearing_();
+    peak_4.2.second_order_filter_sample_clearing_();
+  );
+  
   // LPF ////////////////////////////////////////////////////////////////
+  slider_high_cut_slope == 0 ? (
+    high_cut_1.1.first_order_lpf_sample_clearing_();
+    high_cut_1.2.first_order_lpf_sample_clearing_();
+    high_cut_2.1.second_order_filter_sample_clearing_();
+    high_cut_2.2.second_order_filter_sample_clearing_();
+  );
+  
   slider_high_cut_slope == 1 ? (
     high_cut_1.first_order_lpf_coefficients_(slider_high_cut_frequency);
+    high_cut_2.1.second_order_filter_sample_clearing_();
+    high_cut_2.2.second_order_filter_sample_clearing_();
   );
   
   slider_high_cut_slope == 2 ? (
     high_cut_2.high_cut_coefficients_(slider_high_cut_frequency, 0.70710678);
+    high_cut_1.1.first_order_lpf_sample_clearing_();
+    high_cut_1.2.first_order_lpf_sample_clearing_();
   );
   
   slider_high_cut_slope == 3 ? (
@@ -485,12 +560,23 @@ function update_sliders_() (
   );
   
   // HPF ///////////////////////////////////////////////////////////////////
+  slider_low_cut_slope == 0 ? (
+    low_cut_1.1.first_order_hpf_sample_clearing_();
+    low_cut_1.2.first_order_hpf_sample_clearing_();
+    low_cut_2.1.second_order_filter_sample_clearing_();
+    low_cut_2.2.second_order_filter_sample_clearing_();
+  );
+  
   slider_low_cut_slope == 1 ? (
     low_cut_1.first_order_hpf_coefficients_(slider_low_cut_frequency);
+    low_cut_2.1.second_order_filter_sample_clearing_();
+    low_cut_2.2.second_order_filter_sample_clearing_();
   );
   
   slider_low_cut_slope == 2 ? (
     low_cut_2.low_cut_coefficients_(slider_low_cut_frequency, 0.70710678);
+    low_cut_1.1.first_order_hpf_sample_clearing_();
+    low_cut_1.2.first_order_hpf_sample_clearing_();
   );
   
   slider_low_cut_slope == 3 ? (
@@ -499,17 +585,30 @@ function update_sliders_() (
   );
   
   // EQ //////////////////////////////////////////////////////////////
-  slider_high_type == 0 ? 
-    high_shelf.high_shelf_coefficients_(slider_high_frequency / 4, slider_high_gain):
+  slider_high_type == 0 ? (
+    high_shelf.high_shelf_coefficients_(slider_high_frequency / 4, slider_high_gain);
+    peak_1.1.second_order_filter_sample_clearing_();
+    peak_1.2.second_order_filter_sample_clearing_();
+  ):(
     peak_1.peak_coefficients_(slider_high_frequency, slider_high_gain, slider_high_q);
+    high_shelf.1.second_order_filter_sample_clearing_();
+    high_shelf.2.second_order_filter_sample_clearing_();
+  );
   
   peak_2.peak_coefficients_(slider_high_mid_frequency, slider_high_mid_gain, slider_high_mid_q);
   
   peak_3.peak_coefficients_(slider_low_mid_frequency, slider_low_mid_gain, slider_low_mid_q);
   
-  slider_low_type == 0 ? 
-    low_shelf.low_shelf_coefficients_(slider_low_frequency * 4, slider_low_gain):
+  slider_low_type == 0 ? (
+    low_shelf.low_shelf_coefficients_(slider_low_frequency * 4, slider_low_gain);
+    peak_4.1.second_order_filter_sample_clearing_();
+    peak_4.2.second_order_filter_sample_clearing_();
+  ):(
     peak_4.peak_coefficients_(slider_low_frequency, slider_low_gain, slider_low_q);
+    low_shelf.1.second_order_filter_sample_clearing_();
+    low_shelf.2.second_order_filter_sample_clearing_();
+  );
+  
   // output ///////////////////////////////////////////////////////////
   trim.dB_conversion_(slider_trim);
 );
@@ -1305,8 +1404,8 @@ _global.mawi_eq_a4k_auto_bypass_on_stop == 0 || play_state != 0 ? (
         spl1 = peak_4.2.second_order_filter_sample_processing_(spl1);
       );
     );
-    // Output ///////////////////////////////////////////////
     
+    // Output ///////////////////////////////////////////////
     slider_phase_inv == 1 ? (
       spl0 *= -1;
       spl1 *= -1;

@@ -1,9 +1,8 @@
 desc:mawi EQ-P3B
 /*
-version: 1.07
+version: 1.08
 changelog: 
-  * LPF changed
-  * Code tidied
+  * added filter clearing
 tags: EQ, Filter
 author: mawi
 copyright (C) 2023 and later mawi
@@ -180,6 +179,22 @@ global()
   w_1 = w_0;
 );
 
+function peak_clearing_()
+instance(a1, a2, b0, b1, b2, v_0, v_1, v_2, w_0, w_1, w_2, output)
+local()
+global()
+(
+  v_0 = 0;
+  w_0 = 0;
+  
+  output = 0;
+  
+  v_2 = 0;
+  w_2 = 0;
+  v_1 = 0;
+  w_1 = 0;
+);
+
 // lowpass
 function lpf_coefficients_(slider_frequency)
 instance(g, G_LP)
@@ -192,6 +207,8 @@ global(srate)
 
 function lpf_processing_(input)
 instance(output, x_1, v_1, G_LP)
+local()
+global()
 (
   v_1 = this..G_LP * (input - x_1);
   output = v_1 + x_1;
@@ -200,9 +217,21 @@ instance(output, x_1, v_1, G_LP)
   output;
 );
 
+function lpf_clearing_()
+instance(output, x_1, v_1, G_LP)
+local()
+global()
+(
+  v_1 = 0;
+  x_1 = 0;
+  
+  output = 0;
+);
+
 // highpass
 function hpf_coefficients_(slider_frequency)
 instance(g, G_HP)
+local()
 global(srate)
 (
   g = tan($pi * slider_frequency / srate);
@@ -211,12 +240,23 @@ global(srate)
 
 function hpf_processing_(input)
 instance(output, x_1, g, G_HP)
+local()
 global()
 (
   output = this..G_HP * (input - x_1);
   x_1 = x_1 + 2 * this..g * output;
   
   output;
+);
+
+function hpf_clearing_()
+instance(output, x_1, g, G_HP)
+local()
+global()
+(
+  x_1 = 0;
+  
+  output = 0;
 );
 
 function dB_conversion_(value)
@@ -541,6 +581,47 @@ function update_sliders_() (
   
   // output
   trim.dB_conversion_(slider_trim);
+  
+  // EQ Out/In
+  slider_eq_bypass == 0 ? (
+    // clear filter
+    low_shelf_boost_output_1 = low_shelf_boost_frequency.1.lpf_clearing_();
+    low_shelf_boost_output_2 = low_shelf_boost_frequency.2.lpf_clearing_();
+    
+    low_shelf_atten_output_1 = low_shelf_atten_frequency.1.lpf_clearing_();
+    low_shelf_atten_output_2 = low_shelf_atten_frequency.2.lpf_clearing_();
+    
+    high_peak_boost_frequency.1.peak_clearing_();
+    high_peak_boost_frequency.2.peak_clearing_();
+    
+    high_shelf_atten_output_1 = high_shelf_atten_frequency.1.hpf_clearing_();
+    high_shelf_atten_output_2 = high_shelf_atten_frequency.2.hpf_clearing_();
+  );
+  
+  // Power Off/On
+  slider_eq_power == 0 ? (
+    // clear filter
+    input_1 = input_dc_blocker.1.hpf_clearing_();
+    input_2 = input_dc_blocker.2.hpf_clearing_();
+    
+    low_shelf_boost_output_1 = low_shelf_boost_frequency.1.lpf_clearing_();
+    low_shelf_boost_output_2 = low_shelf_boost_frequency.2.lpf_clearing_();
+    
+    low_shelf_atten_output_1 = low_shelf_atten_frequency.1.lpf_clearing_();
+    low_shelf_atten_output_2 = low_shelf_atten_frequency.2.lpf_clearing_();
+    
+    high_peak_boost_frequency.1.peak_clearing_();
+    high_peak_boost_frequency.2.peak_clearing_();
+    
+    high_shelf_atten_output_1 = high_shelf_atten_frequency.1.hpf_clearing_();
+    high_shelf_atten_output_2 = high_shelf_atten_frequency.2.hpf_clearing_();
+    
+    output_1 = eq_output_1 = harmonics_output_1 = 0;
+    output_2 = eq_output_2 = harmonics_output_2 = 0;
+    
+    output_dc_blocker.1.hpf_clearing_();
+    output_dc_blocker.2.hpf_clearing_();
+  );
 );
 
 function automation_block_()
