@@ -1,5 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<index version="1" name="mawi JSFX" commit="eefe23791fbe3ff7e4bdbd68b511c8683afe6e0e">
+<index version="1" name="mawi JSFX" commit="c9655981af7d162f3f8697f63af77fd9ba158e5e">
+  <category name="Analysis">
+    <reapack name="mawi_Peak_RMS_Meter.jsfx" type="effect" desc="Peak+RMS Meter">
+      <version name="1.00" author="mawi" time="2023-11-02T16:03:48Z">
+        <changelog><![CDATA[* first release :)]]></changelog>
+        <source>https://github.com/mawi-design/JSFX/raw/c9655981af7d162f3f8697f63af77fd9ba158e5e/Analysis/mawi_Peak_RMS_Meter.jsfx</source>
+      </version>
+    </reapack>
+  </category>
   <category name="EQ-A4k">
     <reapack name="mawi_EQ-A4k.jsfx" type="effect" desc="mawi EQ-A4k">
       <metadata>
