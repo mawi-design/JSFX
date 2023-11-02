@@ -7,8 +7,6 @@ tags: analysis meter
 author: mawi
 copyright (C) 2023 and later mawi
 license: GNU AGPLv3 - https://www.gnu.org/licenses/agpl-3.0.html
-provides: 
-  
 about:
   # mawi Peak + RMS Meter
   ---
