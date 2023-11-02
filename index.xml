@@ -1,7 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
-<index version="1" name="mawi JSFX" commit="c9655981af7d162f3f8697f63af77fd9ba158e5e">
+<index version="1" name="mawi JSFX" commit="53967325461309940c023e35d55906110fbbe99e">
   <category name="Analysis">
     <reapack name="mawi_Peak_RMS_Meter.jsfx" type="effect" desc="Peak+RMS Meter">
+      <metadata>
+        <description><![CDATA[{\rtf1\ansi\deff0{\fonttbl{\f0 \fswiss Helvetica;}{\f1 \fmodern Courier;}}
+{\colortbl;\red255\green0\blue0;\red0\green0\blue255;}
+\widowctrl\hyphauto
+
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel0 \b \fs36 mawi Peak + RMS Meter\par}
+{\pard \qc \f0 \sa180 \li0 \fi0 \emdash\emdash\emdash\emdash\emdash\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 The mawi Meter is a peak and RMS meter for the left and right channel. It consumes little CPU and has an attractive graphical interface. It can also be embedded well in the mixer.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 The highlight at a glance:\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab clear reading of maximum peak and rms for left and right channel\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab attractive GUI, freely scalable\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab Retina/HiDPI support\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab low CPU, 0 latency\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab open source code, i.e. modifiable\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab freeware, no annoying activation\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab JSFX is optimally integrated in REAPER\sa180\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 If you want to {\b support} my work or buy me a coffee, you can send my a donation via Paypal: mawi01@mail.de\par}
+}
+]]></description>
+      </metadata>
       <version name="1.00" author="mawi" time="2023-11-02T16:03:48Z">
         <changelog><![CDATA[* first release :)]]></changelog>
         <source>https://github.com/mawi-design/JSFX/raw/c9655981af7d162f3f8697f63af77fd9ba158e5e/Analysis/mawi_Peak_RMS_Meter.jsfx</source>
