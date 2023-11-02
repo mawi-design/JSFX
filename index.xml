@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<index version="1" name="mawi JSFX" commit="53967325461309940c023e35d55906110fbbe99e">
+<index version="1" name="mawi JSFX" commit="8a5dda34628138eae6ee2df4cd05dcc7d26b9bbc">
   <category name="Analysis">
-    <reapack name="mawi_Peak_RMS_Meter.jsfx" type="effect" desc="Peak+RMS Meter">
+    <reapack name="mawi_Peak_RMS_Meter.jsfx" type="effect" desc="mawi Peak+RMS Meter">
       <metadata>
         <description><![CDATA[{\rtf1\ansi\deff0{\fonttbl{\f0 \fswiss Helvetica;}{\f1 \fmodern Courier;}}
 {\colortbl;\red255\green0\blue0;\red0\green0\blue255;}
@@ -24,7 +24,7 @@
       </metadata>
       <version name="1.00" author="mawi" time="2023-11-02T16:03:48Z">
         <changelog><![CDATA[* first release :)]]></changelog>
-        <source>https://github.com/mawi-design/JSFX/raw/c9655981af7d162f3f8697f63af77fd9ba158e5e/Analysis/mawi_Peak_RMS_Meter.jsfx</source>
+        <source>https://github.com/mawi-design/JSFX/raw/8a5dda34628138eae6ee2df4cd05dcc7d26b9bbc/Analysis/mawi_Peak_RMS_Meter.jsfx</source>
       </version>
     </reapack>
   </category>
