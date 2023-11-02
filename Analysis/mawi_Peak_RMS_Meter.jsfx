@@ -1,0 +1,463 @@
+desc:Peak+RMS Meter
+/*
+version: 1.00
+changelog:
+  * first release :)
+tags: analysis meter
+author: mawi
+copyright (C) 2023 and later mawi
+license: GNU AGPLv3 - https://www.gnu.org/licenses/agpl-3.0.html
+provides: 
+  
+about:
+  # mawi Peak + RMS Meter
+  ---
+  The mawi Meter is a peak and RMS meter for the left and right channel. It consumes little CPU and has an attractive graphical interface. It can also be embedded well in the mixer.
+
+  The highlight at a glance:
+  * clear reading of maximum peak and rms for left and right channel
+  * attractive GUI, freely scalable
+  * Retina/HiDPI support
+  * low CPU, 0 latency
+  * open source code, i.e. modifiable
+  * freeware, no annoying activation
+  * JSFX is optimally integrated in REAPER
+
+  If you want to **support** my work or buy me a coffee, you can send my a donation via Paypal: mawi01@mail.de
+*/
+
+in_pin:Meter Input 1
+in_pin:Meter Input 2
+
+slider1:slider_meter_floor=-48<-120,-6,6>Floor (dB)
+slider2:slider_grid_step=6<0,48,1>Grid Step (dB)
+slider3:slider_decay=12<3,120,3>Decay (dB/s)
+slider4:slider_hold=2<0,10,1>Hold time (s)
+slider5:slider_rms=300<100,1000,100>RMS window (ms)
+slider6:slider_rms_3db=1<0,1,1{Off,On}>RMS +3dB (AES-17)
+
+options:no_meter
+
+@serialize
+1; // ext_noinit=1 alternative
+
+@init
+ext_tail_size = -1;
+gfx_ext_retina = 1;
+
+degrees = $pi/180;
+
+function background_color_(red, green, blue)
+instance()
+local()
+global(gfx_clear)
+(
+  gfx_clear = red + green * 256 + blue * 65536;
+);
+
+function gui_scale_factor_(w, h)
+instance(gui_width, gui_height)
+local()
+global(gfx_x, gfx_y, gfx_w, gfx_h, gui_scale_factor_w, gui_scale_factor_h, degrees)
+(
+  gui_width = w;
+  gui_height = h;
+  gui_scale_factor_w = gfx_w / gui_width;
+  gui_scale_factor_h = gfx_h / gui_height;
+);
+
+function resize_icon_(icon_size)
+instance()
+local()
+global(gfx_ext_retina, gfx_ext_flags, gfx_w, gfx_h, gui_scale_factor)
+(
+  gfx_ext_flags == 0 ? (
+    icon_size *= gfx_ext_retina;
+    gfx_set(1, 1, 1, 0.5);
+    gfx_triangle(gfx_w, gfx_h, gfx_w, gfx_h - icon_size, gfx_w - icon_size, gfx_h);
+  );
+);
+
+function meter_init_()
+instance(meter_peak_gfx_1, meter_peak_gfx_2, meter_peak_hold_gfx_1, meter_peak_hold_gfx_2,
+meter_rms_gfx_1, meter_rms_gfx_2, meter_rms_hold_gfx_1, meter_rms_hold_gfx_2)
+local()
+global()
+(
+  meter_peak_gfx_1 = meter_peak_gfx_2 = -500;              // init peak in gfx
+  meter_peak_hold_gfx_1 = meter_peak_hold_gfx_2 = -500;    // init peak hold in gfx
+  meter_rms_gfx_1 = meter_rms_gfx_2 = -500;                // init RMS in gfx
+  meter_rms_hold_gfx_1 = meter_rms_hold_gfx_2 = -500;      // init RMS hold in gfx
+);
+
+function meter_slider_(floor_, grid_step, decay, rms_ms, hold_in_s, rms_3db)
+instance(meter_rms_buffer_size, meter_rms_buffer_1, meter_rms_buffer_2, meter_rms_buffer_index, meter_rms_db_1, meter_rms_db_2,
+meter_rms_hold_counter_1, meter_rms_hold_counter_2, meter_rms_hold_fallback_1, meter_rms_hold_fallback_2, meter_rms_3db, meter_floor, 
+meter_grid_step_in_db, meter_decay, meter_hold_time, meter_hold_height, meter_center_space, meter_grid_space)
+local()
+global(srate, gui_scale_factor_w, gui_scale_factor_h)
+(
+  meter_rms_buffer_size = ceil(srate * rms_ms / 1000);                     // buffer in ms
+  meter_rms_buffer_1 = 0;                                                  // rms 1 data collected here
+  meter_rms_buffer_2 = meter_rms_buffer_1 + (meter_rms_buffer_size + 1);   // rms 2 data collected here
+  meter_rms_buffer_index = 0;                                              // data collection counter
+  meter_rms_hold_counter_1 = meter_rms_hold_counter_2 = 0; 
+  meter_rms_hold_fallback_1 = meter_rms_hold_fallback_2 = 0;
+  meter_rms_3db = rms_3db;
+  meter_floor = floor_;
+  meter_grid_step_in_db = grid_step;
+  meter_decay = decay * 0.046; // db * gfx_framerate;
+  meter_hold_time = hold_in_s;
+  
+);
+
+function meter_gfx_(pos_x, pos_y, width, height)
+instance(meter_pos_x, meter_pos_y, meter_width, meter_height, meter_peak_db_1, meter_peak_db_2, meter_peak_gfx_1, meter_peak_gfx_2,
+meter_decay, meter_peak_hold_gfx_1, meter_peak_hold_gfx_2, meter_hold_time, meter_peak_hold_counter_1, meter_peak_hold_counter_2,
+meter_peak_hold_fallback_1, meter_peak_hold_fallback_2, g, meter_rms_sum_square_1, meter_rms_sum_square_2, meter_rms_buffer_size,
+meter_rms_buffer_1, meter_rms_buffer_2, meter_rms_db_1, meter_rms_db_2, meter_rms_3db, meter_rms_gfx_1, meter_rms_gfx_2,
+meter_rms_hold_gfx_1, meter_rms_hold_gfx_2, meter_rms_hold_counter_1, meter_rms_hold_counter_2, meter_rms_hold_fallback_1,
+meter_rms_hold_fallback_2, meter_rectangle_peak_1, meter_rectangle_peak_2, meter_floor, meter_center_space, meter_rectangle_peak_hold_1,
+meter_rectangle_peak_hold_2, meter_hold_height, meter_rectangle_rms_1, meter_rectangle_rms_2, meter_rectangle_rms_hold_1,
+meter_rectangle_rms_hold_2, meter_pixels_per_db, meter_grid_step_in_pixels, meter_grid_step_in_db, meter_grid_index, #meter_scale_number,
+meter_scale_number_width, meter_scale_number_height, meter_grid_space)
+local()
+global(gfx_ext_retina, gfx_x, gfx_y, gfx_h, gfx_w, gfx_r, gfx_g, gfx_b, gfx_a, gui_scale_factor_w, gui_scale_factor_h gfx_ext_flags)
+(
+  // parameter
+  meter_pos_x = pos_x * gfx_ext_retina;
+  meter_pos_y = pos_y * gfx_ext_retina;
+  meter_width = width;
+  meter_height = max(height, 20);
+  meter_hold_height = max(6 * gui_scale_factor_h, 2);
+  meter_center_space = 1 * gfx_ext_retina;
+  meter_grid_space = 10;
+  
+  // peaks //////////////////////////////////////////////////////////////////////////
+  // peak fallback 
+  meter_peak_db_1 < meter_peak_gfx_1 ? (
+    meter_peak_gfx_1 = meter_peak_gfx_1 - meter_decay;
+  ):(
+    meter_peak_gfx_1 = meter_peak_db_1;
+  );
+  
+  meter_peak_db_2 < meter_peak_gfx_2 ? (
+    meter_peak_gfx_2 = meter_peak_gfx_2 - meter_decay;
+  ):(
+    meter_peak_gfx_2 = meter_peak_db_2;
+  );
+  
+  // peak hold and fallback
+  meter_peak_hold_gfx_1 = max(meter_peak_gfx_1, meter_peak_hold_gfx_1);
+  meter_peak_hold_gfx_2 = max(meter_peak_gfx_2, meter_peak_hold_gfx_2);
+  
+  meter_hold_time < 10 ? (
+    // peak 1
+    meter_peak_gfx_1 >= meter_peak_hold_gfx_1 || meter_peak_hold_counter_1 >  25 * meter_hold_time ? (
+      meter_peak_hold_counter_1 = 0;
+      meter_peak_hold_fallback_1 = 1;
+    );
+    
+    meter_peak_hold_counter_1 += 1;
+    
+    meter_peak_hold_fallback_1 == 1 ? (
+      meter_peak_hold_gfx_1 > meter_peak_gfx_1 ? (
+        meter_peak_hold_gfx_1 = meter_peak_hold_gfx_1 - meter_decay;
+      ):(
+        meter_peak_hold_fallback_1 = 0;
+        meter_peak_hold_gfx_1 = meter_peak_gfx_1;
+      );
+    );
+    
+    // peak 2
+    meter_peak_gfx_2 >= meter_peak_hold_gfx_2 || meter_peak_hold_counter_2 > 25 * meter_hold_time ? (
+      meter_peak_hold_counter_2 = 0;
+      meter_peak_hold_fallback_2 = 1;
+    );
+    
+    meter_peak_hold_counter_2 += 1;
+    
+    meter_peak_hold_fallback_2 == 1 ? (
+      meter_peak_hold_gfx_2 > meter_peak_gfx_2 ? (
+        meter_peak_hold_gfx_2 = meter_peak_hold_gfx_2 - meter_decay;
+      ):(
+        meter_peak_hold_fallback_2 = 0;
+        meter_peak_hold_gfx_2 = meter_peak_gfx_2;
+      );
+    );
+  );
+  
+  // rms ///////////////////////////////////////////////////////////////////////////////////////////
+  // calculate rms value
+  g = meter_rms_sum_square_1 = meter_rms_sum_square_2 = 0;
+  loop(meter_rms_buffer_size,
+    //g == meter_rms_buffer_size - 1 ? g = 0;
+    meter_rms_sum_square_1 += sqr(meter_rms_buffer_1[g]);
+    meter_rms_sum_square_2 += sqr(meter_rms_buffer_2[g]);
+    g += 1;
+  );
+  
+  meter_rms_db_1 = sqrt(meter_rms_sum_square_1 / meter_rms_buffer_size);
+  meter_rms_db_1 = (20 * log10(meter_rms_db_1)) + meter_rms_3db;
+  
+  meter_rms_db_2 = sqrt(meter_rms_sum_square_2 / meter_rms_buffer_size);
+  meter_rms_db_2 = (20 * log10(meter_rms_db_2)) + meter_rms_3db;
+  
+  // rms fallback
+  meter_rms_db_1 < meter_rms_gfx_1 ? (
+    meter_rms_gfx_1 = meter_rms_gfx_1 - meter_decay;
+  ):(
+    meter_rms_gfx_1 = meter_rms_db_1;
+  );
+  
+  meter_rms_db_2 < meter_rms_gfx_2 ? (
+    meter_rms_gfx_2 = meter_rms_gfx_2 - meter_decay;
+  ):(
+    meter_rms_gfx_2 = meter_rms_db_2;
+  );
+  
+  // rms hold and fallback
+  meter_rms_hold_gfx_1 = max(meter_rms_db_1, meter_rms_hold_gfx_1);
+  meter_rms_hold_gfx_2 = max(meter_rms_db_2, meter_rms_hold_gfx_2);
+  
+  meter_hold_time < 10 ? (
+    // rms 1
+    meter_rms_db_1 == meter_rms_hold_gfx_1 || meter_rms_hold_counter_1 > 25 * meter_hold_time ? (
+      meter_rms_hold_counter_1 = 0;
+      meter_rms_hold_fallback_1 = 1;
+    );
+    
+    meter_rms_hold_counter_1 += 1;
+    
+    meter_rms_hold_fallback_1 == 1 ? (
+      meter_rms_hold_gfx_1 > meter_rms_db_1 ? (
+        meter_rms_hold_gfx_1 = meter_rms_hold_gfx_1 - meter_decay;
+      ):(
+        meter_rms_hold_fallback_1 = 0;
+        meter_rms_hold_gfx_1 = meter_rms_db_1;
+      );
+    );
+    
+    // rms 2
+    meter_rms_db_2 == meter_rms_hold_gfx_2 || meter_rms_hold_counter_2 > 25 * meter_hold_time ? (
+      meter_rms_hold_counter_2 = 0;
+      meter_rms_hold_fallback_2 = 1;
+    );
+    
+    meter_rms_hold_counter_2 += 1;
+    
+    meter_rms_hold_fallback_2 == 1 ? (
+      meter_rms_hold_gfx_2 > meter_rms_db_2 ? (
+        meter_rms_hold_gfx_2 = meter_rms_hold_gfx_2 - meter_decay;
+      ):(
+        meter_rms_hold_fallback_2 = 0;
+        meter_rms_hold_gfx_2 = meter_rms_db_2;
+      );
+    );
+  );
+  
+  // meter draw ///////////////////////////////////////////////////////////////////////////////////////////////
+  meter_height > 20 ? (
+    // draw background
+    gfx_set(0, 0, 0, 0.3);
+    gfx_rect(meter_pos_x, meter_pos_y, meter_width, meter_height);
+    
+    // draw peak
+    meter_rectangle_peak_1 = ceil(min(max((meter_height - 1) * (1 - meter_peak_gfx_1 / meter_floor) +1, 0), meter_height));
+    meter_rectangle_peak_2 = ceil(min(max((meter_height - 1) * (1 - meter_peak_gfx_2 / meter_floor) +1, 0), meter_height));
+    
+    gfx_set(0, 1, 0, 0.3);
+    gfx_rect(meter_pos_x, meter_pos_y + meter_height - meter_rectangle_peak_1, floor(meter_width / 2) - meter_center_space, meter_rectangle_peak_1);
+    gfx_rect(meter_pos_x + floor(meter_width / 2) + meter_center_space, meter_pos_y + meter_height - meter_rectangle_peak_2, floor(meter_width / 2 + 0.5) - meter_center_space, meter_rectangle_peak_2);
+    
+    // draw peak hold
+    meter_rectangle_peak_hold_1 = ceil(min(max((meter_height - 1) * (1 - meter_peak_hold_gfx_1 / meter_floor) +1, 0), meter_height));
+    meter_rectangle_peak_hold_2 = ceil(min(max((meter_height - 1) * (1 - meter_peak_hold_gfx_2 / meter_floor) +1, 0), meter_height));
+    
+    gfx_set(1, 1, 0, 0.5);
+    gfx_rect(meter_pos_x, meter_pos_y + meter_height - meter_rectangle_peak_hold_1, floor(meter_width/2) - meter_center_space, min(meter_rectangle_peak_hold_1, meter_hold_height));
+    gfx_rect(meter_pos_x + floor(meter_width / 2) + meter_center_space, meter_pos_y + meter_height - meter_rectangle_peak_hold_2, floor(meter_width / 2 + 0.5) - meter_center_space, min(meter_rectangle_peak_hold_2, meter_hold_height));
+    
+    //draw rms
+    meter_rectangle_rms_1 = ceil(min(max((meter_height - 1) * (1 - meter_rms_gfx_1 / meter_floor) +1, 0), meter_height));
+    meter_rectangle_rms_2 = ceil(min(max((meter_height - 1) * (1 - meter_rms_gfx_2 / meter_floor) +1, 0), meter_height));
+    
+    gfx_set(0, 1, 0, 0.5);
+    gfx_rect(meter_pos_x, meter_pos_y + meter_height - meter_rectangle_rms_1, floor(meter_width/2) - meter_center_space, meter_rectangle_rms_1);
+    gfx_rect(meter_pos_x + floor(meter_width / 2) + meter_center_space, meter_pos_y + meter_height - meter_rectangle_rms_2, floor(meter_width / 2 + 0.5) - meter_center_space, meter_rectangle_rms_2);
+    
+    //draw rms hold
+    meter_rectangle_rms_hold_1 = ceil(min(max((meter_height - 1) * (1 - meter_rms_hold_gfx_1 / meter_floor) +1, 0), meter_height));
+    meter_rectangle_rms_hold_2 = ceil(min(max((meter_height - 1) * (1 - meter_rms_hold_gfx_2 / meter_floor) +1, 0), meter_height));
+    
+    gfx_set(0, 1, 0, 0.5);
+    gfx_rect(meter_pos_x, meter_pos_y + meter_height - meter_rectangle_rms_hold_1, floor(meter_width/2) - meter_center_space, min(meter_rectangle_rms_hold_1, meter_hold_height));
+    gfx_rect(meter_pos_x + floor(meter_width / 2) + meter_center_space, meter_pos_y + meter_height - meter_rectangle_rms_hold_2, floor(meter_width / 2 + 0.5) - meter_center_space, min(meter_rectangle_rms_hold_2, meter_hold_height));
+    
+    // draw dB scale
+    meter_pixels_per_db = (meter_height - 1) / (abs(meter_floor));
+    meter_grid_step_in_pixels = meter_grid_step_in_db * meter_pixels_per_db;
+    gfx_setfont(1, "Verdana", gfx_ext_retina * (gfx_ext_flags == 0 ? min(0.8 * meter_grid_step_in_pixels, 20) : min(1.1 * meter_grid_step_in_pixels, 15)));
+    meter_grid_index = 0;
+    loop(ceil(meter_height / meter_grid_step_in_pixels),
+      // color
+      meter_grid_index%2 ? gfx_set(1, 1, 1, 0.5) : gfx_set(1, 1, 1, 0.7);
+      // draw numbers
+      gfx_x = meter_pos_x;
+      gfx_y = meter_pos_y + meter_grid_step_in_pixels * meter_grid_index -1;
+      sprintf(#meter_scale_number, "%d", meter_grid_step_in_db * meter_grid_index);
+      gfx_measurestr(#meter_scale_number, meter_scale_number_width, meter_scale_number_height);
+      gfx_drawstr(#meter_scale_number, 1+4+256, gfx_x + meter_width, gfx_y);
+      // draw grid
+      gfx_x = meter_pos_x + meter_grid_space;
+      gfx_y = meter_pos_y + meter_grid_step_in_pixels * meter_grid_index;
+      gfx_lineto(max(meter_pos_x + meter_width / 2 - meter_scale_number_width / 2 - meter_grid_space, gfx_x), gfx_y);
+      gfx_x = meter_pos_x + meter_grid_space + meter_width / 2 + meter_scale_number_width / 2;
+      gfx_y = meter_pos_y + meter_grid_step_in_pixels * meter_grid_index;
+      gfx_lineto(max(meter_pos_x + meter_width - meter_grid_space -1, gfx_x), gfx_y);
+      meter_grid_index += 1;
+    );
+  );
+);
+
+function meter_gfx_clip_indicator_(pos_x , pos_y, width, height)
+instance(meter_pos_x, meter_width, meter_clip_indicator_pos_x, meter_clip_indicator_pos_y, meter_clip_indicator_width, meter_clip_indicator_height, meter_center_space, meter_peak_hold_gfx_1, meter_peak_hold_gfx_2,
+#meter_peak_hold_1_readout, #meter_peak_hold_2_readout, meter_peak_hold_1_readout_width, meter_peak_hold_2_readout_width, meter_peak_hold_1_readout_height,
+meter_peak_hold_2_readout_height)
+local()
+global(gfx_ext_retina, gfx_ext_flags, gfx_x, gfx_y, gfx_h, gfx_w, gfx_r, gfx_g, gfx_b, gfx_a, gui_scale_factor_w, gui_scale_factor_h)
+(
+  // draw boxes
+  meter_clip_indicator_pos_x = pos_x * gfx_ext_retina;
+  meter_clip_indicator_pos_y = pos_y * gfx_ext_retina;
+  meter_clip_indicator_width = width;
+  meter_clip_indicator_height = height * gfx_ext_retina;
+  
+  // draw background boxes
+  meter_peak_hold_gfx_1 > 0 ? gfx_set(1, 0, 0, 1) : gfx_set(0, 0, 0, 0.3);
+  gfx_rect(meter_clip_indicator_pos_x, meter_clip_indicator_pos_y, floor(meter_clip_indicator_width / 2) - meter_center_space, meter_clip_indicator_height);
+  
+  meter_peak_hold_gfx_2 > 0 ? gfx_set(1, 0, 0, 1) : gfx_set(0, 0, 0, 0.3);
+  gfx_rect(meter_clip_indicator_pos_x + floor(meter_clip_indicator_width / 2) + meter_center_space, meter_clip_indicator_pos_y, ceil(meter_clip_indicator_width / 2) - meter_center_space, meter_clip_indicator_height);
+  // measure readout strings
+  sprintf(#meter_peak_hold_1_readout, "%+.1f", meter_peak_hold_gfx_1);
+  sprintf(#meter_peak_hold_2_readout, "%+.1f", meter_peak_hold_gfx_2);
+  gfx_measurestr(#meter_peak_hold_1_readout, meter_peak_hold_1_readout_width, meter_peak_hold_1_readout_height);
+  gfx_measurestr(#meter_peak_hold_2_readout, meter_peak_hold_2_readout_width, meter_peak_hold_2_readout_height);
+  // draw readout strings
+  gfx_setfont(1, "Verdana", gfx_ext_retina * 20 * min(max(1.5 /gfx_ext_retina * gui_scale_factor_w, 0), 1));
+  meter_peak_hold_gfx_1 > 0 ? gfx_set(1, 1, 1, 1) : gfx_set(1, 1, 1, 0.6);
+  gfx_x = meter_pos_x + floor(meter_width / 4) - meter_center_space;
+  gfx_y = meter_clip_indicator_pos_y + (meter_clip_indicator_height / 2);
+  gfx_drawstr(#meter_peak_hold_1_readout, 1+4+256, gfx_x, gfx_y);
+  
+  meter_peak_hold_gfx_2 > 0 ? gfx_set(1, 1, 1, 1) : gfx_set(1, 1, 1, 0.6);
+  gfx_x = meter_pos_x + floor(3 * meter_width / 4);
+  gfx_y = meter_clip_indicator_pos_y + (meter_clip_indicator_height / 2);
+  gfx_drawstr(#meter_peak_hold_2_readout, 1+4+256, gfx_x, gfx_y);
+);
+
+function meter_gfx_rms_hold_redout(pos_x, pos_y, width, height)
+instance(meter_pos_x, meter_pos_y, meter_width, meter_height, meter_center_space, readout_width, meter_rms_hold_readout_height,
+meter_rms_hold_gfx_1, meter_rms_hold_gfx_2, #meter_rms_hold_1_readout, #meter_rms_hold_2_readout,
+meter_rms_hold_1_readout_width, meter_rms_hold_1_readout_height, meter_rms_hold_2_readout_width, 
+meter_rms_hold_2_readout_height, meter_rms_hold_readout_pos_x, meter_rms_hold_readout_pos_y, meter_rms_hold_readout_width)
+local()
+global(gfx_ext_retina, gfx_x, gfx_y, gfx_h, gfx_w, gfx_r, gfx_g, gfx_b, gfx_a, gui_scale_factor_w, gui_scale_factor_h)
+(
+  // draw box
+  meter_rms_hold_readout_pos_x = pos_x * gfx_ext_retina;
+  meter_rms_hold_readout_pos_y = pos_y;
+  meter_rms_hold_readout_width = width;
+  meter_rms_hold_readout_height = height * gfx_ext_retina;
+  gfx_set(0, 0, 0, 0.3);
+  gfx_rect(meter_rms_hold_readout_pos_x, meter_rms_hold_readout_pos_y, floor(meter_rms_hold_readout_width/2) - meter_center_space, meter_rms_hold_readout_height, 1);
+  gfx_rect(meter_rms_hold_readout_pos_x + floor(meter_rms_hold_readout_width / 2) + meter_center_space, meter_rms_hold_readout_pos_y, ceil(meter_rms_hold_readout_width / 2) - meter_center_space, meter_rms_hold_readout_height, 1);
+  // measure readout strings
+  gfx_setfont(1, "Verdana", gfx_ext_retina * 20 * min(max(1.5 /gfx_ext_retina * gui_scale_factor_w, 0), 1));
+  sprintf(#meter_rms_hold_1_readout, "%+.1f", meter_rms_hold_gfx_1);
+  sprintf(#meter_rms_hold_2_readout, "%+.1f", meter_rms_hold_gfx_2);
+  gfx_measurestr(#meter_rms_hold_1_readout, meter_rms_hold_1_readout_width, meter_rms_hold_1_readout_height);
+  gfx_measurestr(#meter_rms_hold_2_readout, meter_rms_hold_2_readout_width, meter_rms_hold_2_readout_height);
+  // draw readouts
+  gfx_set(1, 1, 1, 0.6);
+  gfx_x = meter_rms_hold_readout_pos_x + floor(meter_rms_hold_readout_width / 4) - meter_center_space;
+  gfx_y = meter_rms_hold_readout_pos_y + meter_rms_hold_readout_height / 2;
+  gfx_drawstr(#meter_rms_hold_1_readout, 1+4+256, gfx_x, gfx_y);
+  gfx_x = meter_rms_hold_readout_pos_x + floor(3 * meter_rms_hold_readout_width / 4);
+  gfx_y = meter_rms_hold_readout_pos_y + meter_rms_hold_readout_height / 2;
+  gfx_drawstr(#meter_rms_hold_2_readout, 1+4+256, gfx_x, gfx_y);
+);
+
+function meter_block_()
+instance(meter_block_samples_count, meter_peak_db_1, meter_peak_db_2, meter_max_samples_1, meter_max_samples_2)
+local()
+global(samplesblock)
+(
+  // sampletime 0
+  meter_block_samples_count > 0 ? (
+    // calculate dB
+    meter_peak_db_1 = 20 * log10(meter_max_samples_1);
+    meter_peak_db_2 = 20 * log10(meter_max_samples_2);
+    
+    // zero current max sample channels
+    meter_max_samples_1 = meter_max_samples_2 = 0;
+    
+    // reset counter
+    meter_block_samples_count = 0;
+  );
+  
+  meter_block_samples_count += samplesblock;
+);
+
+function meter_sample_(input_1, input_2)
+instance(meter_rms_buffer_index, meter_rms_buffer_size, meter_rms_buffer_1, meter_rms_buffer_2, 
+meter_max_samples_1, meter_max_samples_2)
+local()
+global()
+(
+  // rms buffer
+  meter_rms_buffer_index == meter_rms_buffer_size -1 ? meter_rms_buffer_index = 0;
+  meter_rms_buffer_1[meter_rms_buffer_index] = input_1;
+  meter_rms_buffer_2[meter_rms_buffer_index] = input_2;
+  meter_rms_buffer_index += 1;
+  
+  // peak
+  meter_max_samples_1 = max(meter_max_samples_1, abs(input_1));
+  meter_max_samples_2 = max(meter_max_samples_2, abs(input_2));
+);
+
+output.meter_init_();
+
+@slider
+output.meter_slider_(slider_meter_floor, slider_grid_step, slider_decay, slider_rms, slider_hold, slider_rms_3db ? 3 : 0);
+  
+@gfx 200 700
+background_color_(50, 50, 50);
+gui_scale_factor_(200, 700);
+
+// meter
+gfx_ext_flags == 0 ? (
+  gfx_h > 40 * gfx_ext_retina ? output.meter_gfx_clip_indicator_(10, 10, gfx_w - (20 * gfx_ext_retina), 30);
+  output.meter_gfx_(10, 50, gfx_w - (20 * gfx_ext_retina), gfx_h - (100 * gfx_ext_retina));
+  gfx_h > 80 * gfx_ext_retina ? output.meter_gfx_rms_hold_redout(10, gfx_h - (40 * gfx_ext_retina), gfx_w - (20 * gfx_ext_retina), 30);
+):(
+  gfx_h > 20 * gfx_ext_retina ? output.meter_gfx_clip_indicator_(2, 2, gfx_w - (4 * gfx_ext_retina), 15);
+  output.meter_gfx_(2, 19, gfx_w - (4 * gfx_ext_retina), gfx_h - (38 * gfx_ext_retina));
+  gfx_h > 36 * gfx_ext_retina ? output.meter_gfx_rms_hold_redout(2, gfx_h - (17 * gfx_ext_retina), gfx_w - (4 * gfx_ext_retina), 15);
+);
+
+// reset hold with mouse click
+mouse_cap == 1 ? (
+  output.meter_peak_hold_gfx_1 = output.meter_peak_gfx_1;
+  output.meter_peak_hold_gfx_2 = output.meter_peak_gfx_2;
+  output.meter_rms_hold_gfx_1 = output.meter_rms_gfx_1;
+  output.meter_rms_hold_gfx_2 = output.meter_rms_gfx_2;
+);
+
+@block
+output.meter_block_()
+
+@sample
+output.meter_sample_(spl0, spl1);
+

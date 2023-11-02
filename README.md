@@ -50,6 +50,22 @@ The highlight at a glance:
 * JSFX is optimally integrated in REAPER
 
 ---
+## Peak+RMS Meter
+
+![](images/mawi_Peak_RMS_Meter.PNG)
+
+This is a peak and RMS meter for the left and right channel. It consumes little CPU and has an attractive graphical interface. It can also be embedded well in the mixer.
+
+The highlight at a glance:
+* clear reading of maximum peak and rms for left and right channel
+* attractive GUI, freely scalable
+* Retina/HiDPI support
+* low CPU, 0 latency
+* open source code, i.e. modifiable
+* freeware, no annoying activation
+* JSFX is optimally integrated in REAPER
+
+---
 Known issues:
  * none
 
