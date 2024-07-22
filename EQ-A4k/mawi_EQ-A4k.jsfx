@@ -69,6 +69,34 @@ slider27:slider_high_cut_frequency=16000<300,16000,0.01,:log=3000>-LPF Freq (Hz)
 // slider28:
 slider29:slider_phase_inv=0<0,1,1{Normal,Inverted}>-Phase
 
+filename:0,img/background.png
+filename:1,img/poti_low_gain.png
+filename:2,img/poti_low_freq.png
+filename:3,img/poti_low_q.png
+filename:4,img/button_low_type.png
+filename:5,img/poti_hpf.png
+filename:6,img/poti_low_mid_gain.png
+filename:7,img/poti_low_mid_freq.png
+filename:8,img/poti_low_mid_q.png
+filename:9,img/poti_trim.png
+filename:10,img/poti_high_mid_gain.png
+filename:11,img/poti_high_mid_freq.png
+filename:12,img/poti_high_mid_q.png
+filename:13,img/poti_high_gain.png
+filename:14,img/poti_high_freq.png
+filename:15,img/poti_high_q.png
+filename:16,img/poti_lpf.png
+filename:17,img/button_high_type.png
+filename:18,img/button_bypass.png
+filename:19,img/button_hpf1.png
+filename:20,img/button_hpf2.png
+filename:21,img/button_hpf3.png
+filename:22,img/button_lpf1.png
+filename:23,img/button_lpf2.png
+filename:24,img/button_lpf3.png
+filename:25,img/button_phase.png
+filename:26,img/menu.png
+
 options:no_meter
 
 @serialize
@@ -79,34 +107,6 @@ file_var(0, _global.mawi_eq_a4k_auto_bypass_on_stop);
 @init
 ext_tail_size = -1;
 gfx_ext_retina = 1;
-
-gfx_loadimg(0, "./img/background.png");
-gfx_loadimg(1, "./img/poti_low_gain.png");
-gfx_loadimg(2, "./img/poti_low_freq.png");
-gfx_loadimg(3, "./img/poti_low_q.png");
-gfx_loadimg(4, "./img/button_low_type.png");
-gfx_loadimg(5, "./img/poti_hpf.png");
-gfx_loadimg(6, "./img/poti_low_mid_gain.png");
-gfx_loadimg(7, "./img/poti_low_mid_freq.png");
-gfx_loadimg(8, "./img/poti_low_mid_q.png");
-gfx_loadimg(9, "./img/poti_trim.png");
-gfx_loadimg(10, "./img/poti_high_mid_gain.png");
-gfx_loadimg(11, "./img/poti_high_mid_freq.png");
-gfx_loadimg(12, "./img/poti_high_mid_q.png");
-gfx_loadimg(13, "./img/poti_high_gain.png");
-gfx_loadimg(14, "./img/poti_high_freq.png");
-gfx_loadimg(15, "./img/poti_high_q.png");
-gfx_loadimg(16, "./img/poti_lpf.png");
-gfx_loadimg(17, "./img/button_high_type.png");
-gfx_loadimg(18, "./img/button_bypass.png");
-gfx_loadimg(19, "./img/button_hpf1.png");
-gfx_loadimg(20, "./img/button_hpf2.png");
-gfx_loadimg(21, "./img/button_hpf3.png");
-gfx_loadimg(22, "./img/button_lpf1.png");
-gfx_loadimg(23, "./img/button_lpf2.png");
-gfx_loadimg(24, "./img/button_lpf3.png");
-gfx_loadimg(25, "./img/button_phase.png");
-gfx_loadimg(26, "./img/menu.png");
 
 degrees = $pi/180;
 
