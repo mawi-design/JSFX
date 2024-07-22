@@ -1042,6 +1042,7 @@ high_cut_frequency.slider_parameter_log_scaled_(27, slider_high_cut_frequency, 1
 phase_inv.slider_parameter_(29, slider_phase_inv, 1, 0, 1, 1);
 
 @gfx 960 240
+gfx_a = 1.0;
 background_color_(25, 26, 27);
 background_img_(0, 0);
 
