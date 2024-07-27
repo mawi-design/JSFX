@@ -1,8 +1,10 @@
 desc:mawi EQ-A4k
 /*
-version: 1.08
+version: 1.09
 changelog: 
-  * added filter clearing
+  * slider section shifted
+  * load images in @gfx section
+  * alpha reset
 tags: EQ, Filter
 author: mawi
 copyright (C) 2023 and later mawi
@@ -80,34 +82,6 @@ file_var(0, _global.mawi_eq_a4k_auto_bypass_on_stop);
 ext_tail_size = -1;
 gfx_ext_retina = 1;
 
-gfx_loadimg(0, "./img/background.png");
-gfx_loadimg(1, "./img/poti_low_gain.png");
-gfx_loadimg(2, "./img/poti_low_freq.png");
-gfx_loadimg(3, "./img/poti_low_q.png");
-gfx_loadimg(4, "./img/button_low_type.png");
-gfx_loadimg(5, "./img/poti_hpf.png");
-gfx_loadimg(6, "./img/poti_low_mid_gain.png");
-gfx_loadimg(7, "./img/poti_low_mid_freq.png");
-gfx_loadimg(8, "./img/poti_low_mid_q.png");
-gfx_loadimg(9, "./img/poti_trim.png");
-gfx_loadimg(10, "./img/poti_high_mid_gain.png");
-gfx_loadimg(11, "./img/poti_high_mid_freq.png");
-gfx_loadimg(12, "./img/poti_high_mid_q.png");
-gfx_loadimg(13, "./img/poti_high_gain.png");
-gfx_loadimg(14, "./img/poti_high_freq.png");
-gfx_loadimg(15, "./img/poti_high_q.png");
-gfx_loadimg(16, "./img/poti_lpf.png");
-gfx_loadimg(17, "./img/button_high_type.png");
-gfx_loadimg(18, "./img/button_bypass.png");
-gfx_loadimg(19, "./img/button_hpf1.png");
-gfx_loadimg(20, "./img/button_hpf2.png");
-gfx_loadimg(21, "./img/button_hpf3.png");
-gfx_loadimg(22, "./img/button_lpf1.png");
-gfx_loadimg(23, "./img/button_lpf2.png");
-gfx_loadimg(24, "./img/button_lpf3.png");
-gfx_loadimg(25, "./img/button_phase.png");
-gfx_loadimg(26, "./img/menu.png");
-
 degrees = $pi/180;
 
 function background_color_(red, green, blue)
@@ -139,6 +113,7 @@ global(gfx_ext_retina, gfx_ext_flags, gfx_w, gfx_h, gui_scale_factor)
     icon_size *= gfx_ext_retina;
     gfx_set(1, 1, 1, 0.3);
     gfx_triangle(gfx_w, gfx_h, gfx_w, gfx_h - icon_size, gfx_w - icon_size, gfx_h);
+    gfx_set(1);
   );
 );
 
@@ -1041,7 +1016,72 @@ high_cut_frequency.slider_parameter_log_scaled_(27, slider_high_cut_frequency, 1
 // Phase
 phase_inv.slider_parameter_(29, slider_phase_inv, 1, 0, 1, 1);
 
+@slider
+// Bypass
+eq_in.slider_value = slider_eq_in;
+// HPF
+low_cut_slope.slider_value = slider_low_cut_slope;
+low_cut_frequency.slider_value = slider_low_cut_frequency;
+// LF
+low_gain.slider_value = slider_low_gain;
+low_frequency.slider_value = slider_low_frequency;
+low_q.slider_value = slider_low_q;
+low_type.slider_value = slider_low_type;
+// LMF
+low_mid_gain.slider_value = slider_low_mid_gain;
+low_mid_frequency.slider_value = slider_low_mid_frequency;
+low_mid_q.slider_value = slider_low_mid_q;
+// Trim
+trim.slider_value = slider_trim;
+// HMF
+high_mid_gain.slider_value = slider_high_mid_gain;
+high_mid_frequency.slider_value = slider_high_mid_frequency;
+high_mid_q.slider_value = slider_high_mid_q;
+// HF
+high_gain.slider_value = slider_high_gain;
+high_frequency.slider_value = slider_high_frequency;
+high_q.slider_value = slider_high_q;
+high_type.slider_value = slider_high_type;
+// LPF
+high_cut_slope.slider_value = slider_high_cut_slope;
+high_cut_frequency.slider_value = slider_high_cut_frequency;
+// Phase
+phase_inv.slider_value = slider_phase_inv;
+
+update_sliders_();
+
 @gfx 960 240
+(!imgs_loaded) ? (
+  gfx_loadimg(0, "./img/background.png");
+  gfx_loadimg(1, "./img/poti_low_gain.png");
+  gfx_loadimg(2, "./img/poti_low_freq.png");
+  gfx_loadimg(3, "./img/poti_low_q.png");
+  gfx_loadimg(4, "./img/button_low_type.png");
+  gfx_loadimg(5, "./img/poti_hpf.png");
+  gfx_loadimg(6, "./img/poti_low_mid_gain.png");
+  gfx_loadimg(7, "./img/poti_low_mid_freq.png");
+  gfx_loadimg(8, "./img/poti_low_mid_q.png");
+  gfx_loadimg(9, "./img/poti_trim.png");
+  gfx_loadimg(10, "./img/poti_high_mid_gain.png");
+  gfx_loadimg(11, "./img/poti_high_mid_freq.png");
+  gfx_loadimg(12, "./img/poti_high_mid_q.png");
+  gfx_loadimg(13, "./img/poti_high_gain.png");
+  gfx_loadimg(14, "./img/poti_high_freq.png");
+  gfx_loadimg(15, "./img/poti_high_q.png");
+  gfx_loadimg(16, "./img/poti_lpf.png");
+  gfx_loadimg(17, "./img/button_high_type.png");
+  gfx_loadimg(18, "./img/button_bypass.png");
+  gfx_loadimg(19, "./img/button_hpf1.png");
+  gfx_loadimg(20, "./img/button_hpf2.png");
+  gfx_loadimg(21, "./img/button_hpf3.png");
+  gfx_loadimg(22, "./img/button_lpf1.png");
+  gfx_loadimg(23, "./img/button_lpf2.png");
+  gfx_loadimg(24, "./img/button_lpf3.png");
+  gfx_loadimg(25, "./img/button_phase.png");
+  gfx_loadimg(26, "./img/menu.png");
+  imgs_loaded = 1;
+);
+
 background_color_(25, 26, 27);
 background_img_(0, 0);
 
@@ -1233,40 +1273,6 @@ _global.mawi_eq_a4k_show_tooltip == 0 ? (
 resize_icon_(15);
 
 gfx_setcursor(current_cursor);
-
-@slider
-// Bypass
-eq_in.slider_value = slider_eq_in;
-// HPF
-low_cut_slope.slider_value = slider_low_cut_slope;
-low_cut_frequency.slider_value = slider_low_cut_frequency;
-// LF
-low_gain.slider_value = slider_low_gain;
-low_frequency.slider_value = slider_low_frequency;
-low_q.slider_value = slider_low_q;
-low_type.slider_value = slider_low_type;
-// LMF
-low_mid_gain.slider_value = slider_low_mid_gain;
-low_mid_frequency.slider_value = slider_low_mid_frequency;
-low_mid_q.slider_value = slider_low_mid_q;
-// Trim
-trim.slider_value = slider_trim;
-// HMF
-high_mid_gain.slider_value = slider_high_mid_gain;
-high_mid_frequency.slider_value = slider_high_mid_frequency;
-high_mid_q.slider_value = slider_high_mid_q;
-// HF
-high_gain.slider_value = slider_high_gain;
-high_frequency.slider_value = slider_high_frequency;
-high_q.slider_value = slider_high_q;
-high_type.slider_value = slider_high_type;
-// LPF
-high_cut_slope.slider_value = slider_high_cut_slope;
-high_cut_frequency.slider_value = slider_high_cut_frequency;
-// Phase
-phase_inv.slider_value = slider_phase_inv;
-
-update_sliders_();
 
 @block
 sample_accurate_automation == 1 ? (

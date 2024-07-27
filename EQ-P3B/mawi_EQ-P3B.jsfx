@@ -1,8 +1,10 @@
 desc:mawi EQ-P3B
 /*
-version: 1.08
+version: 1.09
 changelog: 
-  * added filter clearing
+  * slider section shifted
+  * load images in @gfx section
+  * alpha reset
 tags: EQ, Filter
 author: mawi
 copyright (C) 2023 and later mawi
@@ -68,21 +70,6 @@ file_var(0, _global.mawi_eq_p3b_auto_bypass_on_stop);
 ext_tail_size = -1;
 gfx_ext_retina = 1;
 
-gfx_loadimg(0, "./img/background.png");
-gfx_loadimg(1, "./img/button_eq_in.png");
-gfx_loadimg(2, "./img/knob_low_boost.png");
-gfx_loadimg(3, "./img/knob_low_atten.png");
-gfx_loadimg(4, "./img/knob_low_cps.png");
-gfx_loadimg(5, "./img/knob_high_boost_kcs.png");
-gfx_loadimg(6, "./img/knob_high_boost.png");
-gfx_loadimg(7, "./img/knob_high_boost_bandwidth.png");
-gfx_loadimg(8, "./img/knob_high_atten.png");
-gfx_loadimg(9, "./img/knob_high_atten_kcs.png");
-gfx_loadimg(10, "./img/lamp_eq_on.png");
-gfx_loadimg(11, "./img/knob_eq_on.png");
-gfx_loadimg(12, "./img/menu.png");
-gfx_loadimg(13, "./img/knob_trim.png");
-
 degrees = $pi/180;
 
 function background_color_(red, green, blue)
@@ -114,6 +101,7 @@ global(gfx_ext_retina, gfx_ext_flags, gfx_w, gfx_h, gui_scale_factor)
     icon_size *= gfx_ext_retina;
     gfx_set(1, 1, 1, 0.5);
     gfx_triangle(gfx_w, gfx_h, gfx_w, gfx_h - icon_size, gfx_w - icon_size, gfx_h);
+    gfx_set(1);
   );
 );
 
@@ -797,7 +785,46 @@ trim.slider_parameter_linear_(16, slider_trim, 0, -18, 18, 0.01);
 input_dc_blocker.hpf_coefficients_(5);
 output_dc_blocker.hpf_coefficients_(5);
 
+@slider
+// bypass
+eq_bypass.slider_value = slider_eq_bypass;
+// low shelf
+low_shelf_boost.slider_value = slider_low_shelf_boost;
+low_shelf_atten.slider_value = slider_low_shelf_atten;
+low_shelf_frequency.slider_value = slider_low_shelf_frequency;
+// high peak
+high_peak_boost.slider_value = slider_high_peak_boost;
+high_peak_bandwidth.slider_value = slider_high_peak_bandwidth;
+high_peak_frequency.slider_value = slider_high_peak_frequency;
+// high shelf
+high_shelf_atten.slider_value = slider_high_shelf_atten;
+high_shelf_frequency.slider_value = slider_high_shelf_frequency;
+// power
+eq_power.slider_value = slider_eq_power;
+// trim
+trim.slider_value = slider_trim;
+
+update_sliders_();
+
 @gfx 960 182
+(!imgs_loaded) ? (
+  gfx_loadimg(0, "./img/background.png");
+  gfx_loadimg(1, "./img/button_eq_in.png");
+  gfx_loadimg(2, "./img/knob_low_boost.png");
+  gfx_loadimg(3, "./img/knob_low_atten.png");
+  gfx_loadimg(4, "./img/knob_low_cps.png");
+  gfx_loadimg(5, "./img/knob_high_boost_kcs.png");
+  gfx_loadimg(6, "./img/knob_high_boost.png");
+  gfx_loadimg(7, "./img/knob_high_boost_bandwidth.png");
+  gfx_loadimg(8, "./img/knob_high_atten.png");
+  gfx_loadimg(9, "./img/knob_high_atten_kcs.png");
+  gfx_loadimg(10, "./img/lamp_eq_on.png");
+  gfx_loadimg(11, "./img/knob_eq_on.png");
+  gfx_loadimg(12, "./img/menu.png");
+  gfx_loadimg(13, "./img/knob_trim.png");
+  imgs_loaded = 1;
+);
+
 background_color_(25, 26, 27);
 background_img_(0, 0);
 
@@ -901,27 +928,6 @@ _global.mawi_eq_p3b_show_tooltip == 0 ? (
 resize_icon_(15);
 
 gfx_setcursor(current_cursor);
-
-@slider
-// bypass
-eq_bypass.slider_value = slider_eq_bypass;
-// low shelf
-low_shelf_boost.slider_value = slider_low_shelf_boost;
-low_shelf_atten.slider_value = slider_low_shelf_atten;
-low_shelf_frequency.slider_value = slider_low_shelf_frequency;
-// high peak
-high_peak_boost.slider_value = slider_high_peak_boost;
-high_peak_bandwidth.slider_value = slider_high_peak_bandwidth;
-high_peak_frequency.slider_value = slider_high_peak_frequency;
-// high shelf
-high_shelf_atten.slider_value = slider_high_shelf_atten;
-high_shelf_frequency.slider_value = slider_high_shelf_frequency;
-// power
-eq_power.slider_value = slider_eq_power;
-// trim
-trim.slider_value = slider_trim;
-
-update_sliders_();
 
 @block
 sample_accurate_automation == 1 ? (
