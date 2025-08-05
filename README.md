@@ -1,3 +1,5 @@
+# This repository has been archived. The revised versions of [[EQ-A4k]](https://mawidesigns.gumroad.com/l/SolidEEQ/) and [[EQ-P3B]](https://mawidesigns.gumroad.com/l/VintageEQ/) are now available on Gumroad: [[Link]](https://mawidesigns.gumroad.com/). Thank you for your support!
+
 # mawi JSFX repository
 
 This is a collection of JS effects I developed. Inspired by some JSFX with a GUI I had the idea to develop my own JSFX with a GUI.
